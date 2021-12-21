@@ -36,4 +36,6 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation 'com.emc.ecs:nfs-client:1.0.3'
+    implementation "org.java-websocket:Java-WebSocket:1.5.2"
+    implementation 'org.projectlombok:lombok:1.16.10'
 }

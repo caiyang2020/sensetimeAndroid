@@ -1,48 +1,75 @@
 package com.sensetime.autotest;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.icu.text.IDNA;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.StrictMode;
+import android.util.Log;
 import android.widget.Toast;
+import com.sensetime.autotest.util.NfsServer;
+import com.sensetime.autotest.util.PowerShell;
+import com.sensetime.autotest.util.WebSocketServer;
 
-import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
-import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
-import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
-import com.emc.ecs.nfsclient.rpc.CredentialUnix;
+import org.slf4j.Logger;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.net.URI;
+import java.util.Arrays;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class MainActivity extends AppCompatActivity {
-
-    private  final String NFS_IP = "10.151.4.123";
-    private  final String NFS_DIR = "/data";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         requestPermission();
-        System.out.println(getPackageCodePath());
         upgradeRootPermission(getPackageCodePath());
-        if (android.os.Build.VERSION.SDK_INT > 9) {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-        }
-//        doingdown();
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        init();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                NfsServer nfsServer = new NfsServer(getFilesDir(),"Testdata");
+//                nfsServer.doingdown();
+//            }
+//        }).start();
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                WebSocketServer webSocketServer = new WebSocketServer( URI.create("ws://192.168.211.103:9000/ArmTest/1"));
+                webSocketServer.connect();
+//                while (!)
+//                System.out.println(!webSocketServer.getState().equals("ok"));
+                while (!webSocketServer.getState()) {
+                }
+                webSocketServer.send("你好");
+            }
+        }).start();
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                PowerShell powerShell = new PowerShell();
+//                powerShell.cmd(new String[]{"pwd"});
+//            }
+//        }).start();
+
+
 
     }
 
@@ -79,63 +106,51 @@ public class MainActivity extends AppCompatActivity {
                 if (os != null) {
                     os.close();
                 }
+                assert process != null;
                 process.destroy();
-            } catch (Exception e) {
+            } catch (Exception ignored) {
             }
         }
         return true;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public void init() {
 
-    private void doingdown(){
-        String NfsFileDir = "/Testdata/N822/action_hard/ACTION_N822_20211113/00001/CA/AP14/ISD01ADQJX40CAAEEA01.mp4";
-        String localDir = "/";
-        InputStream inputStream = null;
-        OutputStream outputStream = null;
-        try {
-            Nfs3 nfs3 = new Nfs3(NFS_IP, NFS_DIR, new CredentialUnix(0, 0, null), 3);
-            //创建远程服务器上Nfs文件对象
-            Nfs3File nfsFile = new Nfs3File(nfs3, NfsFileDir);
-            String localFileName = localDir + nfsFile.getName();
-            //创建一个本地文件对象
-            System.out.println(localFileName);
-            File localFile = new File(getFilesDir(),nfsFile.getName());
-//            try {
-//                localFile.createNewFile();
-//                localFile.setWritable(true);
-//
-//            }catch (Exception e){
-//                e.printStackTrace();
-//            }
-            //打开一个文件输入流
-//            File localFile = getFilesDir();
-            inputStream = new BufferedInputStream(new NfsFileInputStream(nfsFile));
-            //打开一个远程Nfs文件输出流，将文件复制到的目的地
-            outputStream = new BufferedOutputStream(new FileOutputStream(localFile,true));
+        new Thread(new Runnable() {
 
-            //缓冲内存
-            byte[] buffer = new byte[1024];
+            File SdkDir = new File(getDataDir()+"/Sdk");
+            File gtDir = new File(getDataDir()+"/Gt");
+            File logDir = new File( getDataDir()+"/Log");
 
-            while (inputStream.read(buffer) != -1) {
-                outputStream.write(buffer);
-            }
-            System.out.println("文件下载完成！");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            try {
-                if (outputStream != null) {
-                    outputStream.close();
+            @Override
+            public void run() {
+                try {
+                    Process mkdirProcess = Runtime.getRuntime().exec("su");
+                    DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
+                    Log.i("info", "程序进入初始化");
+                    if (!SdkDir.exists()) {
+                        Log.i("info", "创建SDK文件夹");
+                        dataOutputStream.writeBytes("mkdir " + SdkDir.toString() + "\n");
+                    }
+                    if (!gtDir.exists()) {
+                        Log.i("info", "创建Gt文件夹");
+                        dataOutputStream.writeBytes("mkdir " + gtDir.toString() + "\n");
+                    }
+                    if (!logDir.exists()) {
+                        Log.i("info", "创建Log文件夹");
+                        dataOutputStream.writeBytes("mkdir " + logDir.toString() + "\n");
+                    }
+                    dataOutputStream.flush();
+                    dataOutputStream.close();
+                    mkdirProcess.waitFor();
+                    mkdirProcess.destroy();
+                }catch (IOException | InterruptedException e){
+                    e.printStackTrace();
                 }
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+                Log.i("info","初始化程序完成");
+
             }
-        }
+        }).start();
     }
-
-
-
 }
