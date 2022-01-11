@@ -21,7 +21,7 @@ public class PowerShell {
         }
     }
 
-    public  static void cmd(String[] cmds) {
+    public static void cmd(String... cmds) {
         String errorInfo ="";
         String successInfo ="";
         try {
@@ -31,13 +31,18 @@ public class PowerShell {
             for (String cmd:
                  cmds) {
                dos.writeBytes(cmd+"\n");
-
             }
+            dos.writeBytes("");
             dos.flush();
+            dos.close();
 //            System.out.println(process.waitFor());
+//            process.waitFor();
             BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while ((successInfo = br.readLine()) != null) {
                Log.i("info",successInfo);
+//               if ("Read video finished".equalsIgnoreCase(successInfo)){
+//                   break;
+//               }
             }
             InputStream is = process.getErrorStream();
             System.out.println(is.read());
@@ -46,8 +51,10 @@ public class PowerShell {
             while ((errorInfo = errorResult.readLine()) != null) {
                 Log.i("info",errorInfo);
             }
+            process.destroy();
         } catch (IOException  e) {
             e.printStackTrace();
+            System.out.println("barrier99999");
         }
     }
 

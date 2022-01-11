@@ -6,6 +6,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.icu.text.IDNA;
 import android.os.Build;
@@ -22,14 +24,21 @@ import org.slf4j.Logger;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Properties;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MainActivity extends AppCompatActivity {
 
+
+    private Context mContext;
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,28 +47,9 @@ public class MainActivity extends AppCompatActivity {
         upgradeRootPermission(getPackageCodePath());
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+        mContext = getApplication();
         init();
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                NfsServer nfsServer = new NfsServer(getFilesDir(),"Testdata");
-//                nfsServer.doingdown();
-//            }
-//        }).start();
 
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                WebSocketServer webSocketServer = new WebSocketServer( URI.create("ws://192.168.211.103:9000/ArmTest/1"));
-                webSocketServer.connect();
-//                while (!)
-//                System.out.println(!webSocketServer.getState().equals("ok"));
-                while (!webSocketServer.getState()) {
-                }
-                webSocketServer.send("你好");
-            }
-        }).start();
 
 //        new Thread(new Runnable() {
 //            @Override
@@ -113,15 +103,15 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
-
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void init() {
 
         new Thread(new Runnable() {
 
-            File SdkDir = new File(getDataDir()+"/Sdk");
-            File gtDir = new File(getDataDir()+"/Gt");
-            File logDir = new File( getDataDir()+"/Log");
+            File SdkDir = new File(getFilesDir()+"/Sdk");
+            File gtDir = new File(getFilesDir()+"/Gt");
+            File logDir = new File( getFilesDir()+"/Log");
+            File videoDir = new File( getFilesDir()+"/Video");
 
             @Override
             public void run() {
@@ -132,14 +122,22 @@ public class MainActivity extends AppCompatActivity {
                     if (!SdkDir.exists()) {
                         Log.i("info", "创建SDK文件夹");
                         dataOutputStream.writeBytes("mkdir " + SdkDir.toString() + "\n");
+                        dataOutputStream.writeBytes("chmod 777 " + SdkDir.toString() + "\n");
                     }
                     if (!gtDir.exists()) {
                         Log.i("info", "创建Gt文件夹");
                         dataOutputStream.writeBytes("mkdir " + gtDir.toString() + "\n");
+                        dataOutputStream.writeBytes("chmod 777 " + gtDir.toString() + "\n");
                     }
                     if (!logDir.exists()) {
                         Log.i("info", "创建Log文件夹");
                         dataOutputStream.writeBytes("mkdir " + logDir.toString() + "\n");
+                        dataOutputStream.writeBytes("chmod 777 " + logDir.toString() + "\n");
+                    }
+                    if (!videoDir.exists()) {
+                        Log.i("info", "创建video文件夹");
+                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
+                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
                     }
                     dataOutputStream.flush();
                     dataOutputStream.close();
@@ -150,6 +148,27 @@ public class MainActivity extends AppCompatActivity {
                 }
                 Log.i("info","初始化程序完成");
 
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.i("info","开始连接websocket");
+                WebSocketServer webSocketServer = new WebSocketServer(mContext,URI.create("ws://10.151.106.106:9000/ArmTest/1"));
+                try {
+                    webSocketServer.connectBlocking();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                while (!webSocketServer.getState()) {
+                    try {
+                        Log.i("info","websocket连接中");
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }).start();
     }
