@@ -40,14 +40,15 @@ public class WebSocketServer extends WebSocketClient {
     public void onMessage(String message) {
         System.out.println(message);
     Task task= JSON.parseObject(message, Task.class);
-    enableTask.init(mContext,task);
+    enableTask.init(mContext,task,this);
         System.out.println(task);
-    this.send("收到任务初始化完成开始执行");
+//    this.send("收到任务初始化完成开始执行");
 
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
+        this.state=false;
         System.out.println(code);
         System.out.println(reason);
         System.out.println(remote);

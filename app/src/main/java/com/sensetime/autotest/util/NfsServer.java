@@ -94,7 +94,7 @@ public class NfsServer{
                 outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 
                 //缓冲内存
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[1024*1024];
 
                 while (inputStream.read(buffer) != -1) {
                     outputStream.write(buffer);

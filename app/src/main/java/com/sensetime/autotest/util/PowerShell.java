@@ -54,7 +54,6 @@ public class PowerShell {
             process.destroy();
         } catch (IOException  e) {
             e.printStackTrace();
-            System.out.println("barrier99999");
         }
     }
 

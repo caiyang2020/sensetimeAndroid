@@ -105,6 +105,8 @@ public class MainActivity extends AppCompatActivity {
     }
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void init() {
+        WebSocketServer webSocketServer = new WebSocketServer(mContext,URI.create("ws://10.151.4.123:9000/ArmTest/1"));
+
 
         new Thread(new Runnable() {
 
@@ -155,7 +157,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Log.i("info","开始连接websocket");
-                WebSocketServer webSocketServer = new WebSocketServer(mContext,URI.create("ws://10.151.106.106:9000/ArmTest/1"));
                 try {
                     webSocketServer.connectBlocking();
                 } catch (InterruptedException e) {

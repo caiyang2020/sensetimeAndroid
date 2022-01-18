@@ -5,6 +5,18 @@ import lombok.Data;
 @Data
 public class Task {
 
+    private int status;
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    private int taskCode;
+
     private int taskType;
 
     private String taskName;
@@ -14,6 +26,16 @@ public class Task {
     private String func;
 
     private String GtPath;
+
+    private String deviceID;
+
+    public String getDeviceID() {
+        return deviceID;
+    }
+
+    public void setDeviceID(String deviceID) {
+        this.deviceID = deviceID;
+    }
 
     public String getTaskName() {
         return taskName;
@@ -53,5 +75,13 @@ public class Task {
 
     public void setTaskType(int taskType) {
         this.taskType = taskType;
+    }
+
+    public int getTaskCode() {
+        return taskCode;
+    }
+
+    public void setTaskCode(int taskCode) {
+        this.taskCode = taskCode;
     }
 }
