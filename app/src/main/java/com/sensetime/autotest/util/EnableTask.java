@@ -149,6 +149,7 @@ public class EnableTask {
                     "pwd",
                     "export ADSP_LIBRARY_PATH=\"./lib/snpe_1.43;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp\"",
                     "export LD_LIBRARY_PATH=./lib:./samples_for_test/bin/opencv:./lib/snpe_1.43:$LD_LIBRARY_PATH",
+                    "source env.sh test",
                     "./samples_for_test/bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).split("/")[readyVideo.get(0).split("/").length-1] + " | tee " + context.getFilesDir() + "/Log/" + readyVideo.get(0).replaceAll("/","^").replaceAll("\\.[a-zA-z0-9]+$",".log")+" 2>&1");
             Log.i("INFO","正在执行，当前进度"+readyVideo.get(0));
             PowerShell.cmd("cd "+context.getFilesDir()+"/Video",

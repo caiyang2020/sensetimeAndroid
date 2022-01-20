@@ -4,37 +4,23 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.icu.text.IDNA;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
-import com.sensetime.autotest.util.NfsServer;
-import com.sensetime.autotest.util.PowerShell;
 import com.sensetime.autotest.util.WebSocketServer;
-
-import org.slf4j.Logger;
-
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Properties;
-
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MainActivity extends AppCompatActivity {
-
 
     private Context mContext;
 
@@ -49,17 +35,6 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.setThreadPolicy(policy);
         mContext = getApplication();
         init();
-
-
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                PowerShell powerShell = new PowerShell();
-//                powerShell.cmd(new String[]{"pwd"});
-//            }
-//        }).start();
-
-
 
     }
 
