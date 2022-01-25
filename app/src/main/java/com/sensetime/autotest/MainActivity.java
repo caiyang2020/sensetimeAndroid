@@ -5,23 +5,50 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
+<<<<<<< HEAD
+=======
+import android.content.ComponentName;
+>>>>>>> dev
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
+<<<<<<< HEAD
 import com.sensetime.autotest.util.WebSocketServer;
+=======
+
+import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.service.WebSocketService;
+
+>>>>>>> dev
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+<<<<<<< HEAD
+=======
+
+>>>>>>> dev
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MainActivity extends AppCompatActivity {
 
+<<<<<<< HEAD
+=======
+    private WebSocketService WebSClientService;
+
+    private WebSocketService.JWebSocketClientBinder binder;
+
+    private WebSocketServer client;
+
+>>>>>>> dev
     private Context mContext;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -33,10 +60,43 @@ public class MainActivity extends AppCompatActivity {
         upgradeRootPermission(getPackageCodePath());
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+//        getSupportActionBar().hide();
         mContext = getApplication();
+        //启动服务
+        startJWebSClientService();
+        //绑定服务
+        bindService();
         init();
-
     }
+
+<<<<<<< HEAD
+    }
+=======
+    private void bindService() {
+        Intent bindIntent = new Intent(mContext, WebSocketService.class);
+        bindService(bindIntent, serviceConnection, BIND_AUTO_CREATE);
+    }
+
+    private void startJWebSClientService() {
+        Intent intent = new Intent(mContext, WebSocketService.class);
+        startService(intent);
+    }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Log.e("MainActivity", "服务与活动成功绑定");
+            binder = (WebSocketService.JWebSocketClientBinder) iBinder;
+            WebSClientService = binder.getService();
+            client = WebSClientService.client;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.e("MainActivity", "服务与活动成功断开");
+        }
+    };
+>>>>>>> dev
 
     public void requestPermission() {
 
@@ -80,8 +140,7 @@ public class MainActivity extends AppCompatActivity {
     }
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void init() {
-        WebSocketServer webSocketServer = new WebSocketServer(mContext,URI.create("ws://10.151.4.123:9000/ArmTest/1"));
-
+//        WebSocketServer webSocketServer = new WebSocketServer(mContext,URI.create("ws://10.151.4.123:9000/ArmTest/1"));
 
         new Thread(new Runnable() {
 
@@ -128,24 +187,24 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i("info","开始连接websocket");
-                try {
-                    webSocketServer.connectBlocking();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                while (!webSocketServer.getState()) {
-                    try {
-                        Log.i("info","websocket连接中");
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                Log.i("info","开始连接websocket");
+//                try {
+//                    webSocketServer.connectBlocking();
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                while (!webSocketServer.getState()) {
+//                    try {
+//                        Log.i("info","websocket连接中");
+//                        Thread.sleep(100);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }).start();
     }
 }
