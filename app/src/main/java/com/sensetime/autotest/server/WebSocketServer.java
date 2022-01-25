@@ -1,9 +1,10 @@
-package com.sensetime.autotest.util;
+package com.sensetime.autotest.server;
 
 import android.content.Context;
 
 import com.alibaba.fastjson.JSON;
 import com.sensetime.autotest.entity.Task;
+import com.sensetime.autotest.util.EnableTask;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
@@ -30,6 +31,10 @@ public class WebSocketServer extends WebSocketClient {
         this.mContext=context;
     }
 
+    public WebSocketServer(URI uri) {
+        super(uri,new Draft_6455());
+    }
+
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         state=true;
@@ -52,13 +57,13 @@ public class WebSocketServer extends WebSocketClient {
         System.out.println(code);
         System.out.println(reason);
         System.out.println(remote);
-        if (code==1006){
-            try {
-                this.reconnectBlocking();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+//        if (code==1006){
+//            try {
+//                this.reconnectBlocking();
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     @Override

@@ -1,28 +1,17 @@
 package com.sensetime.autotest.util;
 
 import android.content.Context;
-import android.os.Build;
-import android.provider.MediaStore;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
-
 import com.sensetime.autotest.entity.Task;
+import com.sensetime.autotest.server.WebSocketServer;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.locks.Lock;
-
-import javax.xml.transform.Source;
 
 public class EnableTask {
 
@@ -36,7 +25,7 @@ public class EnableTask {
 
     int gtNum=0;
 
-    private WebSocketServer  webSocketServer;
+    private WebSocketServer webSocketServer;
 
 
     public EnableTask(Context mcontext) {
