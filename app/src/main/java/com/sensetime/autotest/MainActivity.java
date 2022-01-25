@@ -5,10 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
-<<<<<<< HEAD
-=======
 import android.content.ComponentName;
->>>>>>> dev
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -19,36 +16,24 @@ import android.os.IBinder;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Toast;
-<<<<<<< HEAD
-import com.sensetime.autotest.util.WebSocketServer;
-=======
 
+import com.sensetime.autotest.asynctask.EnableTask;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
-
->>>>>>> dev
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-<<<<<<< HEAD
-=======
-
->>>>>>> dev
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MainActivity extends AppCompatActivity {
 
-<<<<<<< HEAD
-=======
     private WebSocketService WebSClientService;
 
     private WebSocketService.JWebSocketClientBinder binder;
 
     private WebSocketServer client;
 
->>>>>>> dev
     private Context mContext;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -60,18 +45,15 @@ public class MainActivity extends AppCompatActivity {
         upgradeRootPermission(getPackageCodePath());
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
-//        getSupportActionBar().hide();
         mContext = getApplication();
         //启动服务
         startJWebSClientService();
         //绑定服务
         bindService();
+        EnableTask enableTask = new EnableTask();
         init();
     }
 
-<<<<<<< HEAD
-    }
-=======
     private void bindService() {
         Intent bindIntent = new Intent(mContext, WebSocketService.class);
         bindService(bindIntent, serviceConnection, BIND_AUTO_CREATE);
@@ -96,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "服务与活动成功断开");
         }
     };
->>>>>>> dev
 
     public void requestPermission() {
 
@@ -186,25 +167,5 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }).start();
-
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                Log.i("info","开始连接websocket");
-//                try {
-//                    webSocketServer.connectBlocking();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                while (!webSocketServer.getState()) {
-//                    try {
-//                        Log.i("info","websocket连接中");
-//                        Thread.sleep(100);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }).start();
     }
 }
