@@ -12,7 +12,11 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 
+import com.alibaba.fastjson.JSON;
+import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.util.EnableTask;
+import com.sensetime.autotest.util.Wsutil;
 
 import org.java_websocket.handshake.ServerHandshake;
 
@@ -22,6 +26,8 @@ import java.net.URI;
 public class WebSocketService extends Service {
 
     private final static int GRAY_SERVICE_ID = 1001;
+
+    private Context mContext;
 
     private URI uri;
 
@@ -89,12 +95,16 @@ public class WebSocketService extends Service {
         closeConnect();
         super.onDestroy();
     }
-
     private void initSocketClient() {
-        URI uri = URI.create("ws://10.151.4.123:9000/ArmTest/1");
+        URI uri = URI.create(Wsutil.ws);
         client = new WebSocketServer(uri) {
             @Override
             public void onMessage(String message) {
+                System.out.println(message);
+                EnableTask enableTask = new EnableTask(getBaseContext());
+                Task task= JSON.parseObject(message, Task.class);
+                System.out.println(task);
+                enableTask.init(getBaseContext(),task,this);
             }
 
             @Override
@@ -110,7 +120,6 @@ public class WebSocketService extends Service {
             @Override
             public void run() {
                 try {
-                    //connectBlocking多出一个等待操作，会先连接再发送，否则未连接发送会报错
                     client.connectBlocking();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -122,7 +131,6 @@ public class WebSocketService extends Service {
 
     public void sendMsg(String msg) {
         if (null != client) {
-//            Log.e("JWebSocketClientService", "发送的消息：" + msg);
             client.send(msg);
         }
     }

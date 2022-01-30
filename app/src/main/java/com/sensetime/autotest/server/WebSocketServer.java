@@ -57,13 +57,6 @@ public class WebSocketServer extends WebSocketClient {
         System.out.println(code);
         System.out.println(reason);
         System.out.println(remote);
-//        if (code==1006){
-//            try {
-//                this.reconnectBlocking();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
     @Override

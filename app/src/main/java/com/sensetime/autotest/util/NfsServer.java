@@ -22,26 +22,10 @@ import javax.xml.transform.Source;
 
 public class NfsServer{
 
-
-
-//    private File FilesDir;
-//    private   String NFS_IP;
-//    private   String NFS_DIR = "/data";
-
-//    public NfsServer(File FilesDir,String string){
-//        switch (string){
-//            case "TestData" :
-//                NFS_IP="10.151.3.26";
-//
-//            case "Testdata":
-//                NFS_IP="10.151.4.123";
-//
-//        }
-//        this.FilesDir=FilesDir;
-//    }
-
-
     public static void getFile(Context context, String path,String type){
+
+        String allPath = path;
+
         path=path.replaceFirst("/data","");
         String NFS_IP = "";
         if (path.contains("TestData")){
@@ -74,7 +58,7 @@ public class NfsServer{
                     localFile = new File(context.getFilesDir()+"/Gt", nfsFile.getName());
                     break;
                 case "video":
-                    localFile = new File(context.getFilesDir()+"/Video",nfsFile.getName());
+                    localFile = new File(context.getFilesDir()+"/Video",allPath.replaceAll("/","_"));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
@@ -94,17 +78,13 @@ public class NfsServer{
                 outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 
                 //缓冲内存
-                byte[] buffer = new byte[1024*1024];
-
-                while (inputStream.read(buffer) != -1) {
-                    outputStream.write(buffer);
+                byte[] buffer = new byte[4096];
+                int lenth = 0;
+                while ((lenth=inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer,0,lenth);
                 }
-                if (outputStream != null) {
-                    outputStream.close();
-                }
-                if (inputStream != null) {
-                    inputStream.close();
-                }
+                outputStream.close();
+                inputStream.close();
                 Log.i("info","文件下载完成！");
                 if (type.equalsIgnoreCase("sdk")) {
                     PowerShell.cmd("cd " + context.getFilesDir() + "/Sdk",
@@ -112,7 +92,6 @@ public class NfsServer{
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
                             "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/");
                 }
-
             }else {
                 Log.i("info","文件已存在,不进入下载");
             }
