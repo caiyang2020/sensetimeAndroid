@@ -1,10 +1,9 @@
 package com.sensetime.autotest.server;
 
 import android.content.Context;
+import android.util.Log;
 
-import com.alibaba.fastjson.JSON;
-import com.sensetime.autotest.entity.Task;
-import com.sensetime.autotest.util.EnableTask;
+import com.sensetime.autotest.service.EnableTaskService;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
@@ -23,7 +22,7 @@ public class WebSocketServer extends WebSocketClient {
 
     private Context mContext=null;
 
-    private EnableTask enableTask =new EnableTask(mContext);
+    private EnableTaskService enableTaskService =new EnableTaskService(mContext);
 
     public WebSocketServer(Context context, URI serverUri) {
 
@@ -37,30 +36,22 @@ public class WebSocketServer extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshakedata) {
-        state=true;
-        System.out.println("链接成功");
+        Log.e("WebSocketClient",handshakedata.toString());
     }
 
     @Override
     public void onMessage(String message) {
-        System.out.println(message);
-    Task task= JSON.parseObject(message, Task.class);
-    enableTask.init(mContext,task,this);
-        System.out.println(task);
-//    this.send("收到任务初始化完成开始执行");
+        Log.e("WebSocketClient",message);
 
     }
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        this.state=false;
-        System.out.println(code);
-        System.out.println(reason);
-        System.out.println(remote);
+        Log.e("WebSocketClient",reason);
     }
 
     @Override
     public void onError(Exception ex) {
-
+        Log.e("WebSocketClient",ex.toString());
     }
 }

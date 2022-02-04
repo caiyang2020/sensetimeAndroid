@@ -1,10 +1,15 @@
-package com.sensetime.autotest.util;
+package com.sensetime.autotest.service;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.os.IBinder;
 import android.util.Log;
-
+import androidx.annotation.Nullable;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.server.NfsServer;
+import com.sensetime.autotest.util.PowerShell;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,9 +18,11 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
-public class EnableTask {
+public class EnableTaskService extends Service {
 
     private Context mcontext;
+
+
 
     List<String> gtList = new LinkedList<String>();
 
@@ -27,7 +34,7 @@ public class EnableTask {
 
     private WebSocketServer webSocketServer;
 
-    public EnableTask(Context mcontext) {
+    public EnableTaskService(Context mcontext) {
         this.mcontext = mcontext;
     }
 
@@ -43,7 +50,6 @@ public class EnableTask {
         prepareGtList(context, task);
 //        //程序运行
         runTask(context, task);
-
         return null;
     }
 
@@ -150,5 +156,11 @@ public class EnableTask {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

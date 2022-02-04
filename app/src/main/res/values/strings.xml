@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">autoTest</string>
     <string name="button1">连接</string>
-    <string name="name1">Name</string>
+    <string name="name1">请输入设备ID</string>
     <string name="devicename1">DeviceName</string>
+    <string name="connectstatus">链接状态</string>
+    <string name="taskName">任务名称</string>
+    <string name="taskWait">待任务输入...</string>
 </resources>

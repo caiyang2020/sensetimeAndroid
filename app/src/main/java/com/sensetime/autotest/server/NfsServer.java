@@ -1,13 +1,19 @@
-package com.sensetime.autotest.util;
+package com.sensetime.autotest.server;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
 import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
 import com.emc.ecs.nfsclient.nfs.io.NfsFileOutputStream;
 import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
 import com.emc.ecs.nfsclient.rpc.CredentialUnix;
+import com.sensetime.autotest.util.PowerShell;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -20,7 +26,7 @@ import java.io.OutputStream;
 
 import javax.xml.transform.Source;
 
-public class NfsServer{
+public class NfsServer extends Service {
 
     public static void getFile(Context context, String path,String type){
 
@@ -63,15 +69,7 @@ public class NfsServer{
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
             }
-//            try {
-//                localFile.createNewFile();
-//                localFile.setWritable(true);
-//
-//            }catch (Exception e){
-//                e.printStackTrace();
-//            }
-            //打开一个文件输入流
-//            File localFile = getFilesDir();
+
             inputStream = new BufferedInputStream(new NfsFileInputStream(nfsFile));
             //打开一个远程Nfs文件输出流，将文件复制到的目的地
             if (!localFile.exists()) {
@@ -96,16 +94,6 @@ public class NfsServer{
                 Log.i("info","文件已存在,不进入下载");
             }
 
-//            if (type.equalsIgnoreCase("sdk")){
-////                    PowerShell.cmd("cd "+context.getFilesDir()+"/Sdk",
-////                            "mkdir "+nfsFile.getName().replace(".tar",""),
-////                            "chmod 777 "+nfsFile.getName().replace(".tar","")
-////                            ,"tar -xvf "+nfsFile.getName()+" -C ./"+nfsFile.getName().replace(".tar",""));
-//                PowerShell.cmd("cd "+context.getFilesDir()+"/Sdk",
-////                            "mkdir "+nfsFile.getName().replace(".tar",""),
-////                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
-//                        "tar -xvf "+nfsFile.getName());
-//            }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
@@ -164,4 +152,9 @@ public class NfsServer{
         }
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 }
