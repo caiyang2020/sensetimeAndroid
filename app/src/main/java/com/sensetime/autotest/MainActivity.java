@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -14,15 +13,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.StrictMode;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,23 +26,21 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.apkfuns.log2file.LogFileEngineFactory;
+import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.adapyer.MyAdapter;
-import com.sensetime.autotest.asynctask.EnableTask;
 import com.sensetime.autotest.database.MyDBOpenHelper;
+import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
+import com.sensetime.autotest.tools.Tools;
 import com.sensetime.autotest.util.Wsutil;
-
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLOutput;
 import java.util.LinkedList;
 
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class MainActivity extends AppCompatActivity {
 
     private WebSocketService WebSClientService;
@@ -87,21 +80,40 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mContext = getApplication();
+        initLog();
         initUi();
         addPermisson();
-//        openDataBase();
+        openDataBase();
         init();
+        startJWebSClientService();
+        bindService();
 
-        ListView listView = findViewById(R.id.ListView);
-        LinkedList<String> data = new LinkedList<>();
-        MyAdapter myAdapter = new MyAdapter(mContext,data);
-        listView.setAdapter(myAdapter);
+//        try {
+////           new Tools(mContext).taskComplete();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+    }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    private void initLog() {
+        LogUtils.getLogConfig()
+                .configAllowLog(true)
+                .configTagPrefix("app")
+                .configShowBorders(false)
+                .configFormatTag("%d{HH:mm:ss:SSS} %t %c");
+
+        LogUtils.getLog2FileConfig().configLog2FileEnable(true)
+                // targetSdkVersion >= 23 需要确保有写sdcard权限
+                .configLog2FilePath(getDataDir()+"/cache")
+                .configLog2FileNameFormat("%d{yyyyMMdd}.txt")
+                .configLogFileEngine(new LogFileEngineFactory(mContext));
     }
 
     private void openDataBase() {
         MyDBOpenHelper myDBHelper = new MyDBOpenHelper(mContext, "my.db", null, 1);
 //        SQLiteDatabase db = myDBHelper.getWritableDatabase();
+        LogUtils.i("Database preparation is complete");
 
     }
 
@@ -110,9 +122,11 @@ public class MainActivity extends AppCompatActivity {
 //        upgradeRootPermission(getPackageCodePath());
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+        LogUtils.i("The system permission request is complete");
         IntentFilter filter=new IntentFilter("com.caisang");
         receiver=new AppBroadcast();
         registerReceiver(receiver,filter);
+        LogUtils.i("Broadcast Listener registration is complete");
     }
 
     private void bindService() {
@@ -144,8 +158,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            System.out.println(intent.getExtras());
+//            System.out.println(intent.getExtras());
             Log.e("onReceive:","BroadCastDemo" );
+//            Task task = intent.getExtras().getParcelable("task");
+//            System.out.println(intent.getStringExtra("nihao"));
+//            System.out.println(task);
         }
     }
 
@@ -205,33 +222,20 @@ public class MainActivity extends AppCompatActivity {
         connect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println("触发点击事件");
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        for (int i = 0; i <101 ; i++) {
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            pb.setProgress(i);
-                        }
-                    }
-                }).start();
-
-                Wsutil.devicesID=  deviceId.getText().toString();
+                Wsutil.devicesID = deviceId.getText().toString();
                 image.setVisibility(View.VISIBLE);
 //                System.out.println(deviceId.getText());
                 //启动服务
                 startJWebSClientService();
                 //绑定服务
                 bindService();
-
-
-
             }
         });
+
+        ListView listView = findViewById(R.id.ListView);
+        LinkedList<String> data = new LinkedList<>();
+        MyAdapter myAdapter = new MyAdapter(mContext,data);
+        listView.setAdapter(myAdapter);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -280,11 +284,12 @@ public class MainActivity extends AppCompatActivity {
                     dataOutputStream.close();
                     mkdirProcess.waitFor();
                     mkdirProcess.destroy();
+                    Log.i("info","Initialization complete");
                 }catch (IOException | InterruptedException e){
+                    LogUtils.e("Failed to initialize folder");
+                    LogUtils.e(e);
                     e.printStackTrace();
                 }
-                Log.i("info","初始化程序完成");
-
             }
         }).start();
     }

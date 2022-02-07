@@ -4,8 +4,10 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.util.Log;
 import androidx.annotation.Nullable;
+import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.server.NfsServer;
@@ -22,17 +24,15 @@ public class EnableTaskService extends Service {
 
     private Context mcontext;
 
-
-
     List<String> gtList = new LinkedList<String>();
 
     private final List<String> readyVideo = new LinkedList<String>();
 
-    final transient Object lock = new Object();
-
     int gtNum = 0;
 
     private WebSocketServer webSocketServer;
+
+    private Intent intent = new Intent("com.caisang");
 
     public EnableTaskService(Context mcontext) {
         this.mcontext = mcontext;
@@ -40,15 +40,20 @@ public class EnableTaskService extends Service {
 
     public String init(Context context, Task task, WebSocketServer webSocketServer) {
         this.webSocketServer = webSocketServer;
-        System.out.println("进入SDK准备 ");
+        intent.putExtra("task", (Parcelable) task);
+        mcontext.sendBroadcast(intent);
+
         //sdk 准备
+        LogUtils.i("Start SDK preparation");
         NfsServer.getFile(context,task.getSdkPath(),"sdk");
-//        gt 准备
+        LogUtils.i("SDK preparation is complete");
+        //gt 准备
+        LogUtils.i("Start GT preparation");
         NfsServer.getFile(context, task.getGtPath(), "gt");
-//
-//        //分析生成GT列表
+        LogUtils.i("Gt preparation is complete");
+        //分析生成GT列表
         prepareGtList(context, task);
-//        //程序运行
+        //程序运行
         runTask(context, task);
         return null;
     }
@@ -78,8 +83,14 @@ public class EnableTaskService extends Service {
 
         String[] sdk = task.getSdkPath().split("/");
         String sdkName = sdk[sdk.length - 1].split("\\.")[0];
-        int total = 0;
 
+        //创建以任务名称创建log保存文件夹
+        File dir = new File(context.getFilesDir() + "/Log/" + task.getTaskName());
+        if (!dir.exists()){
+            dir.mkdir();
+        }
+        int total = gtNum;
+        int num =0;
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -91,15 +102,14 @@ public class EnableTaskService extends Service {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    if (readyVideo.size() <= 5) {
-                        File Logfile = new File(context.getFilesDir() + "/Log/" + path.replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
-                        if (Logfile.exists()) {
-                            System.out.println("log存在，视频不下载");
-                        } else {
-                            NfsServer.getFile(context, path, "video");
-                            readyVideo.add(path);
-                            System.out.println(readyVideo.get(0));
-                        }
+
+                    File Logfile = new File(context.getFilesDir() + "/Log/" + path.replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    if (Logfile.exists()) {
+                        System.out.println("log存在，视频不下载");
+                    } else {
+                        NfsServer.getFile(context, path, "video");
+                        readyVideo.add(path);
+                        System.out.println(readyVideo.get(0));
                     }
                 }
                 readyVideo.add("finish");
@@ -107,26 +117,14 @@ public class EnableTaskService extends Service {
         }).start();
 
     while (true){
-
-            System.out.println("等待任务执行");
+        System.out.println("等待任务执行");
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0).equals("finish")) {
-//                PowerShell.cmd("cd "+context.getFilesDir()+"/Log",
-//                        "tar -cvf "+task.getTaskName()+".tar *"
-////                        "rm *.log");
-//                );
-//                NfsServer.uploadFile(context.getFilesDir()+"/Log/"+task.getTaskName()+".tar");
-////                if(webSocketServer.getState()){
-////                    webSocketServer.reconnect();
-////                }
-////                try {
-////                    task.setStatus(1);
-////                    webSocketServer.reconnect();
-////                    Thread.sleep(1000);
-////                } catch (InterruptedException e) {
-////                    e.printStackTrace();
-////                }
-//                webSocketServer.send(task.getTaskCode()+"|done");
+                PowerShell.cmd("cd "+context.getFilesDir()+"/Log",
+                        "tar -cvf "+task.getTaskName()+".tar /"+task.getTaskName()
+//                        "rm *.log");
+                );
+                NfsServer.uploadFile(context.getFilesDir()+"/Log/"+task.getTaskName()+".tar");
                     webSocketServer.send("执行任务完成");
                     break;
                 }

@@ -131,9 +131,10 @@ public class NfsServer extends Service {
             outputStream = new BufferedOutputStream(new NfsFileOutputStream(NfsFile));
 
             //缓冲内存
-            byte[] buffer = new byte[1024];
-            while ((inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer);
+            byte[] buffer = new byte[4096];
+            int lenth = 0;
+            while ((lenth = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer,0,lenth);
             }
             System.out.println("文件上传完成！");
         } catch (Exception ex) {

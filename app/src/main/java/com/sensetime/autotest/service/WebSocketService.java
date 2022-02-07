@@ -29,7 +29,7 @@ public class WebSocketService extends Service {
     private JWebSocketClientBinder mBinder = new JWebSocketClientBinder();
 
     //设置intent用来向MainActivity传递消息修改UI
-    private Intent intent= new Intent("cao.caisang");
+    private Intent intent= new Intent("com.caisang");
 
     //用于Activity和service通讯
     public class JWebSocketClientBinder extends Binder {
@@ -92,7 +92,7 @@ public class WebSocketService extends Service {
         super.onDestroy();
     }
     private void initSocketClient() {
-        URI uri = URI.create(Wsutil.ws);
+        URI uri = URI.create(Wsutil.ws+Wsutil.devicesID);
         client = new WebSocketServer(uri) {
             @Override
             public void onMessage(String message) {
@@ -101,6 +101,7 @@ public class WebSocketService extends Service {
                 Task task= JSON.parseObject(message, Task.class);
                 System.out.println(task);
                 intent.putExtra("task",task.toString());
+                sendBroadcast(intent);
                 enableTaskService.init(getBaseContext(),task,this);
             }
 

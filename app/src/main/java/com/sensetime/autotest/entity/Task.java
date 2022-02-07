@@ -1,5 +1,7 @@
 package com.sensetime.autotest.entity;
 
+import java.io.Serializable;
+
 import lombok.Data;
 
 @Data
