@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import javax.xml.transform.Source;
 
 public class NfsServer extends Service {
 
@@ -39,7 +38,7 @@ public class NfsServer extends Service {
         }else if(path.contains("Testdata")) {
             NFS_IP="10.151.4.123";
         }else {
-            return;
+            NFS_IP="10.151.4.123";
         }
         String NfsFileDir = path;
         System.out.println(NfsFileDir);
@@ -106,7 +105,6 @@ public class NfsServer extends Service {
                 }
 
             } catch (Exception e) {
-                System.out.println(111111);
                 e.printStackTrace();
             }
 

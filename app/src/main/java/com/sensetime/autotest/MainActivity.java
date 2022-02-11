@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +28,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.alibaba.fastjson.JSON;
 import com.apkfuns.log2file.LogFileEngineFactory;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.adapyer.MyAdapter;
@@ -33,7 +36,6 @@ import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
-import com.sensetime.autotest.tools.Tools;
 import com.sensetime.autotest.util.Wsutil;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView image;
 
     private ProgressBar pb ;
+    private TextView pbText ;
 
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -85,14 +88,7 @@ public class MainActivity extends AppCompatActivity {
         addPermisson();
         openDataBase();
         init();
-        startJWebSClientService();
-        bindService();
 
-//        try {
-////           new Tools(mContext).taskComplete();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -112,14 +108,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void openDataBase() {
         MyDBOpenHelper myDBHelper = new MyDBOpenHelper(mContext, "my.db", null, 1);
-//        SQLiteDatabase db = myDBHelper.getWritableDatabase();
+        SQLiteDatabase db = myDBHelper.getWritableDatabase();
         LogUtils.i("Database preparation is complete");
 
     }
 
     private void addPermisson() {
         requestPermission();
-//        upgradeRootPermission(getPackageCodePath());
+        upgradeRootPermission(getPackageCodePath());
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         LogUtils.i("The system permission request is complete");
@@ -156,13 +152,21 @@ public class MainActivity extends AppCompatActivity {
 
     class AppBroadcast extends BroadcastReceiver{
 
+        //消息接收模块
         @Override
         public void onReceive(Context context, Intent intent) {
-//            System.out.println(intent.getExtras());
-            Log.e("onReceive:","BroadCastDemo" );
-//            Task task = intent.getExtras().getParcelable("task");
-//            System.out.println(intent.getStringExtra("nihao"));
-//            System.out.println(task);
+            int process = intent.getIntExtra("process",1000);
+            Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);
+            taskName.setText(task.getTaskName());
+            sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replace(".tar",""));
+            funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length-1].replace(".csv",""));
+            runFunc.setText(task.getFunc());
+            if (process!=1000){
+                pb.setProgress(process);
+                pbText.setText(process+"%");
+            }
+
+
         }
     }
 
@@ -219,6 +223,8 @@ public class MainActivity extends AppCompatActivity {
          user = findViewById(R.id.button2);
          image = findViewById(R.id.imageView);
          pb = findViewById(R.id.progressBar);
+         pbText = findViewById(R.id.textView8);
+
         connect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

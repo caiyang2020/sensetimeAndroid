@@ -20,9 +20,9 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
-public class EnableTaskService extends Service {
+public class EnableTaskService  {
 
-    private Context mcontext;
+    private final Context mContext;
 
     List<String> gtList = new LinkedList<String>();
 
@@ -30,31 +30,31 @@ public class EnableTaskService extends Service {
 
     int gtNum = 0;
 
-    private WebSocketServer webSocketServer;
+    int process=0;
 
-    private Intent intent = new Intent("com.caisang");
+    private final WebSocketServer webSocketServer;
 
-    public EnableTaskService(Context mcontext) {
-        this.mcontext = mcontext;
+    private final Intent intent = new Intent("com.caisang");
+
+    public EnableTaskService(Context context,WebSocketServer webSocketServer) {
+        this.mContext = context;
+        this.webSocketServer=webSocketServer;
     }
 
-    public String init(Context context, Task task, WebSocketServer webSocketServer) {
-        this.webSocketServer = webSocketServer;
-        intent.putExtra("task", (Parcelable) task);
-        mcontext.sendBroadcast(intent);
+    public String init(Task task ) {
 
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-        NfsServer.getFile(context,task.getSdkPath(),"sdk");
+        NfsServer.getFile(mContext,task.getSdkPath(),"sdk");
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
-        NfsServer.getFile(context, task.getGtPath(), "gt");
+        NfsServer.getFile(mContext, task.getGtPath(), "gt");
         LogUtils.i("Gt preparation is complete");
         //分析生成GT列表
-        prepareGtList(context, task);
+        prepareGtList(mContext, task);
         //程序运行
-        runTask(context, task);
+        runTask(mContext, task);
         return null;
     }
 
@@ -135,18 +135,22 @@ public class EnableTaskService extends Service {
                     readyVideo.remove(0);
                     continue;
                 }
-
-//                System.out.println("./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).split("/")[readyVideo.get(0).split("/").length - 1] + " 30 ./ | tee " + context.getFilesDir() + "/Log/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-                PowerShell.cmd("cd /data/local/tmp/AutoTest/"+task.getTaskName(),
+                LogUtils.i("cmd:"+"./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","_")+" 30  | tee " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
+                PowerShell.cmd("cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$",""),
                         "pwd",
-//                    "export ADSP_LIBRARY_PATH=\"./lib/snpe_1.43;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp\"",
-//                    "export LD_LIBRARY_PATH=./lib:./samples_for_test/bin/opencv:./lib/snpe_1.43:$LD_LIBRARY_PATH",
                         "source profile",
-                        "./bin/" + task.getFunc() + " 0 " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","_")+ " 30 ./face.db 30 | tee " + context.getFilesDir() + "/Log/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
+                        "./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","_")+" 30  | tee " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
                 Log.i("INFO", "正在执行，当前进度" + readyVideo.get(0));
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0).replaceAll("/","_"));
                 readyVideo.remove(0);
+                num++;
+
+                if ((num/gtNum)>process){
+                    process = num/gtNum;
+                }
+
+                intent.putExtra("process",process);
             }
             try {
                 Thread.sleep(1000);
@@ -154,11 +158,5 @@ public class EnableTaskService extends Service {
                 e.printStackTrace();
             }
         }
-    }
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
     }
 }

@@ -24,7 +24,7 @@ public class Tools extends Service {
         this.mcontext = mcontext;
     }
 
-    public  void taskComplete() throws IOException {
+    public void taskComplete() throws IOException {
 
         URL url = new URL("https://cn.bing.com/search?q=no+protocol&cvid=25594cd00d8842399f4bb6ee18a34d61&aqs=edge.0.0l9.403j0j4&FORM=ANAB01&PC=W011");
         HttpURLConnection conn = (HttpsURLConnection) url.openConnection();

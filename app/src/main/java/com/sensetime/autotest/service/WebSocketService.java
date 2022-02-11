@@ -97,12 +97,12 @@ public class WebSocketService extends Service {
             @Override
             public void onMessage(String message) {
                 System.out.println(message);
-                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
+                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext(),client);
                 Task task= JSON.parseObject(message, Task.class);
-                System.out.println(task);
-                intent.putExtra("task",task.toString());
+                intent.putExtra("task",JSON.toJSONString(task));
                 sendBroadcast(intent);
-                enableTaskService.init(getBaseContext(),task,this);
+                enableTaskService.init(task);
+
             }
 
             @Override
@@ -152,7 +152,7 @@ public class WebSocketService extends Service {
     private Runnable heartBeatRunnable = new Runnable() {
         @Override
         public void run() {
-            Log.e("JWebSocketClientService", "心跳包检测websocket连接状态");
+//            Log.e("JWebSocketClientService", "心跳包检测websocket连接状态");
             if (client != null) {
                 if (client.isClosed()) {
                     reconnectWs();

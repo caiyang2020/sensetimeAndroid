@@ -90,7 +90,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
-            android:editable="false"
+            android:focusable="false"
             android:inputType="textPersonName"
             android:minHeight="48dp"
             android:text="@string/taskWait"
