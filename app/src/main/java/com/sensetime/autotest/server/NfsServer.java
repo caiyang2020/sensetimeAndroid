@@ -8,6 +8,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.apkfuns.logutils.LogUtils;
 import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
 import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
 import com.emc.ecs.nfsclient.nfs.io.NfsFileOutputStream;
@@ -41,14 +42,25 @@ public class NfsServer extends Service {
             NFS_IP="10.151.4.123";
         }
         String NfsFileDir = path;
-        System.out.println(NfsFileDir);
-        System.out.println(NFS_IP);
         String localDir = "/";
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
             Nfs3 nfs3 = new Nfs3(NFS_IP, "/data", new CredentialUnix(0, 0, null), 3);
             //创建远程服务器上Nfs文件对象
+//            System.out.println(NfsFileDir.split("/$"));
+//            StringBuilder fatherPath = new StringBuilder();
+//            for (int i=0; (i<NfsFileDir.split("/").length-1);i++){
+//                if (i==0){
+//                    fatherPath.append(NfsFileDir.split("/")[i]);
+//                }else {
+//                    fatherPath.append("/").append(NfsFileDir.split("/")[i]);
+//                }
+//            }
+//            LogUtils.e(fatherPath);
+//            Nfs3File nfsFile1 = new Nfs3File(nfs3, String.valueOf(fatherPath));
+//            Nfs3File nfsFile = new Nfs3File(nfsFile1,NfsFileDir.split("/")[NfsFileDir.split("/").length-1]);
+            LogUtils.e(NfsFileDir);
             Nfs3File nfsFile = new Nfs3File(nfs3, NfsFileDir);
             String localFileName = localDir + nfsFile.getName();
             //创建一个本地文件对象
@@ -63,7 +75,7 @@ public class NfsServer extends Service {
                     localFile = new File(context.getFilesDir()+"/Gt", nfsFile.getName());
                     break;
                 case "video":
-                    localFile = new File(context.getFilesDir()+"/Video",allPath.replaceAll("/","_"));
+                    localFile = new File(context.getFilesDir()+"/Video",allPath.replaceAll("/","^"));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
@@ -75,7 +87,7 @@ public class NfsServer extends Service {
                 outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 
                 //缓冲内存
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[8192];
                 int lenth = 0;
                 while ((lenth=inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer,0,lenth);
@@ -87,7 +99,8 @@ public class NfsServer extends Service {
                     PowerShell.cmd("cd " + context.getFilesDir() + "/Sdk",
 //                            "mkdir "+nfsFile.getName().replace(".tar",""),
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
-                            "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/");
+                            "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/",
+                            "chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar",""));
                 }
             }else {
                 Log.i("info","文件已存在,不进入下载");
@@ -129,7 +142,7 @@ public class NfsServer extends Service {
             outputStream = new BufferedOutputStream(new NfsFileOutputStream(NfsFile));
 
             //缓冲内存
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[8192];
             int lenth = 0;
             while ((lenth = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer,0,lenth);

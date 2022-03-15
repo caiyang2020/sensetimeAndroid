@@ -20,6 +20,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.StrictMode;
+import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -37,6 +39,7 @@ import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
 import com.sensetime.autotest.util.Wsutil;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -88,7 +91,11 @@ public class MainActivity extends AppCompatActivity {
         addPermisson();
         openDataBase();
         init();
-
+        Wsutil.devicesID=Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
+        //启动服务
+        startJWebSClientService();
+        //绑定服务
+        bindService();
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -157,13 +164,25 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             int process = intent.getIntExtra("process",1000);
             Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);
-            taskName.setText(task.getTaskName());
-            sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replace(".tar",""));
-            funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length-1].replace(".csv",""));
-            runFunc.setText(task.getFunc());
-            if (process!=1000){
+            if (task!=null) {
+                taskName.setText(task.getTaskName());
+                sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replace(".tar", ""));
+                funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length - 1].replace(".csv", ""));
+                runFunc.setText(task.getFunc());
+            }
+            if (process!=1000) {
                 pb.setProgress(process);
-                pbText.setText(process+"%");
+                pbText.setText(process + "%");
+            }
+
+            String message;
+            if ((message = intent.getStringExtra("message"))!=null){
+                try {
+                    client.send(message);
+                }catch (WebsocketNotConnectedException e){
+
+                }
+
             }
 
 
@@ -224,19 +243,20 @@ public class MainActivity extends AppCompatActivity {
          image = findViewById(R.id.imageView);
          pb = findViewById(R.id.progressBar);
          pbText = findViewById(R.id.textView8);
-
-        connect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Wsutil.devicesID = deviceId.getText().toString();
-                image.setVisibility(View.VISIBLE);
-//                System.out.println(deviceId.getText());
-                //启动服务
-                startJWebSClientService();
-                //绑定服务
-                bindService();
-            }
-        });
+        deviceId.setText(Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID));
+        image.setVisibility(View.VISIBLE);
+//        connect.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Wsutil.devicesID = deviceId.getText().toString();
+//                image.setVisibility(View.VISIBLE);
+////                System.out.println(deviceId.getText());
+//                //启动服务
+//                startJWebSClientService();
+//                //绑定服务
+//                bindService();
+//            }
+//        });
 
         ListView listView = findViewById(R.id.ListView);
         LinkedList<String> data = new LinkedList<>();
