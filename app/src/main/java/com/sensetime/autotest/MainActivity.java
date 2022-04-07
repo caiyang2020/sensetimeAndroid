@@ -91,7 +91,9 @@ public class MainActivity extends AppCompatActivity {
         addPermisson();
         openDataBase();
         init();
-        Wsutil.devicesID=Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
+        String androidID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
+        Wsutil.devicesID=androidID;
+        LogUtils.e(androidID);
         //启动服务
         startJWebSClientService();
         //绑定服务

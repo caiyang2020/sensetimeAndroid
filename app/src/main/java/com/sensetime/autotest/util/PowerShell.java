@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class PowerShell {
     Process process ;
@@ -78,7 +79,7 @@ public class PowerShell {
             dos.close();
 //            System.out.println(process.waitFor());
 //            process.waitFor();
-            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             while ((successInfo = br.readLine()) != null) {
                 messageintent.putExtra("message",successInfo);
 //                Log.i("info",successInfo);
@@ -87,13 +88,13 @@ public class PowerShell {
 //               }
                 context.sendBroadcast(messageintent);
             }
-            InputStream is = process.getErrorStream();
-            System.out.println(is.read());
-            LogUtils.e("error", String.valueOf(is.read()));
-            BufferedReader errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            while ((errorInfo = errorResult.readLine()) != null) {
-                LogUtils.e("error",errorInfo);
-            }
+//            InputStream is = process.getErrorStream();
+//            System.out.println(is.read());
+//            LogUtils.e("error", String.valueOf(is.read()));
+//            BufferedReader errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+//            while ((errorInfo = errorResult.readLine()) != null) {
+////                LogUtils.e("error",errorInfo);
+//            }
             process.destroy();
         } catch (IOException  e) {
             e.printStackTrace();

@@ -151,6 +151,11 @@ public class EnableTaskService  {
                 LogUtils.i("cmd:"+"./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","_")+" 30  | tee " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
 
                 //标准平台SDK调用方式
+//                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
+//                        "pwd",
+//                        "source env.sh",
+//                        "./samples_CAPI/bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","^")+" 30  | tee " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
+//                V362
                 PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
                         "pwd",
                         "source env.sh",
@@ -171,8 +176,6 @@ public class EnableTaskService  {
                     intent.putExtra("process",process);
                     context.sendBroadcast(intent);
                 }
-
-
             }
             try {
                 Thread.sleep(1000);
