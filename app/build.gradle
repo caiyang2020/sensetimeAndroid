@@ -8,7 +8,7 @@ android {
     defaultConfig {
         applicationId "com.sensetime.autotest"
         minSdk 21
-        targetSdk 31
+        targetSdk 27
         versionCode 1
         versionName "1.0.1"
 

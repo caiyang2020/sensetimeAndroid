@@ -87,7 +87,7 @@ public class NfsServer extends Service {
                 outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
 
                 //缓冲内存
-                byte[] buffer = new byte[8192];
+                byte[] buffer = new byte[4096];
                 int lenth = 0;
                 while ((lenth=inputStream.read(buffer)) != -1) {
                     outputStream.write(buffer,0,lenth);
@@ -101,6 +101,8 @@ public class NfsServer extends Service {
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
                             "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/",
                             "chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar",""));
+                    String[] cmds = {"sh","-c","su;cd " +context.getFilesDir() + "/Sdk;tar -xvf " + nfsFile.getName() + "\\ -C /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar","")};
+                    System.out.println(cmds);
                 }
             }else {
                 Log.i("info","文件已存在,不进入下载");
@@ -133,7 +135,7 @@ public class NfsServer extends Service {
             File localFile = new File(localDir);
             //获取本地文件的文件名，此名字用于在远程的Nfs服务器上指定目录创建同名文件
             String localFileName = localFile.getName();
-            Nfs3 nfs3 = new Nfs3("10.151.4.123", "/data", new CredentialUnix(0, 0, null), 3);
+            Nfs3 nfs3 = new Nfs3("10.151.5.190", "/data", new CredentialUnix(0, 0, null), 3);
             //创建远程服务器上Nfs文件对象
             Nfs3File NfsFile = new Nfs3File(nfs3, "/test_platform/task_log/" + localFileName);
             //打开一个文件输入流
@@ -148,6 +150,47 @@ public class NfsServer extends Service {
                 outputStream.write(buffer,0,lenth);
             }
             System.out.println("文件上传完成！");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static void uploadFile(String dirName,String taskName) {
+        String localDir = dirName;
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
+        try {
+//            System.out.println("/test_platform/task_log/" + taskName+"/Log/"+taskName);
+            //创建一个本地文件对象
+            File localFile = new File(localDir);
+            //获取本地文件的文件名，此名字用于在远程的Nfs服务器上指定目录创建同名文件
+            String localFileName = localFile.getName();
+            Nfs3 nfs3 = new Nfs3("10.151.5.190", "/data", new CredentialUnix(0, 0, null), 3);
+            //创建远程服务器上Nfs文件对象
+            Nfs3File NfsFile = new Nfs3File(nfs3, "/test_platform/task_log/" + taskName+"/Log/"+taskName+"/"+localFileName);
+            //打开一个文件输入流
+            inputStream = new BufferedInputStream(new FileInputStream(localFile));
+            //打开一个远程Nfs文件输出流，将文件复制到的目的地
+            outputStream = new BufferedOutputStream(new NfsFileOutputStream(NfsFile));
+
+            //缓冲内存
+            byte[] buffer = new byte[1024];
+            int lenth = 0;
+            while ((lenth = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer,0,lenth);
+            }
+//            System.out.println("文件上传完成！");
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {

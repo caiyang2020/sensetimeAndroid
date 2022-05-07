@@ -5,9 +5,13 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
+
 import com.alibaba.fastjson.JSON;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
@@ -19,6 +23,8 @@ import java.net.URI;
 public class WebSocketService extends Service {
 
     private final static int GRAY_SERVICE_ID = 1001;
+
+    private static final long CLOSE_RECON_TIME = 100;
 
     private Context mContext;
 
@@ -94,20 +100,37 @@ public class WebSocketService extends Service {
     private void initSocketClient() {
         URI uri = URI.create(Wsutil.ws+Wsutil.devicesID);
         client = new WebSocketServer(uri) {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
                 System.out.println(message);
-                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext(),client);
+//                System.out.println("收到一次消息");
+                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
                 Task task= JSON.parseObject(message, Task.class);
                 intent.putExtra("task",JSON.toJSONString(task));
                 sendBroadcast(intent);
                 enableTaskService.init(task);
-
             }
 
             @Override
             public void onOpen(ServerHandshake handshakedata) {
                 super.onOpen(handshakedata);
+            }
+
+            @Override
+            public void onClose(int code, String reason, boolean remote) {//在连接断开时调用
+//                LogUtil.e(TAG, "onClose() 连接断开_reason：" + reason);
+
+                mHandler.removeCallbacks(heartBeatRunnable);
+                mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
+            }
+
+            @Override
+            public void onError(Exception ex) {//在连接出错时调用
+//                LogUtil.e(TAG, "onError() 连接出错：" + ex.getMessage());
+
+                mHandler.removeCallbacks(heartBeatRunnable);
+                mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
             }
         };
         connect();
@@ -129,9 +152,14 @@ public class WebSocketService extends Service {
 
 
     public void sendMsg(String msg) {
-        if (null != client) {
-            client.send(msg);
-        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (null != client) {
+                    client.send(msg);
+                }
+            }
+        }).start();
     }
 
     private void closeConnect() {
@@ -152,6 +180,7 @@ public class WebSocketService extends Service {
     private Runnable heartBeatRunnable = new Runnable() {
         @Override
         public void run() {
+//            client.send("心跳包");
 //            Log.e("JWebSocketClientService", "心跳包检测websocket连接状态");
             if (client != null) {
                 if (client.isClosed()) {

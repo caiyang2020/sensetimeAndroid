@@ -1,4 +1,4 @@
-package com.sensetime.autotest.tools;
+package com.sensetime.autotest.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;

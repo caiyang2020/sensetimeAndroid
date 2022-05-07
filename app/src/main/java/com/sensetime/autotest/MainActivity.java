@@ -119,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
         MyDBOpenHelper myDBHelper = new MyDBOpenHelper(mContext, "my.db", null, 1);
         SQLiteDatabase db = myDBHelper.getWritableDatabase();
         LogUtils.i("Database preparation is complete");
-
     }
 
     private void addPermisson() {
@@ -177,15 +176,15 @@ public class MainActivity extends AppCompatActivity {
                 pbText.setText(process + "%");
             }
 
-            String message;
-            if ((message = intent.getStringExtra("message"))!=null){
-                try {
-                    client.send(message);
-                }catch (WebsocketNotConnectedException e){
-
-                }
-
-            }
+//            String message;
+//            if ((message = intent.getStringExtra("message"))!=null){
+//                try {
+//                    client.send(message);
+//                }catch (WebsocketNotConnectedException e){
+//
+//                }
+//
+//            }
 
 
         }

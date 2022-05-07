@@ -2,10 +2,6 @@ package com.sensetime.autotest;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-import com.sensetime.autotest.tools.Tools;
-
 import java.io.IOException;
 
 /**

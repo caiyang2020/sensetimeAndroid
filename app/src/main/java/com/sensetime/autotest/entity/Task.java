@@ -2,10 +2,11 @@ package com.sensetime.autotest.entity;
 
 import java.io.Serializable;
 
+
 import lombok.Data;
 
 @Data
-public class Task {
+public class Task implements Serializable {
 
     private int status;
 
