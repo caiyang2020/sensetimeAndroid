@@ -299,8 +299,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (!videoDir.exists()) {
                         Log.i("info", "创建video文件夹");
+
+//                      dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
                         dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
                         dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
+                    }else {
+                        dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
+//                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
+//                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
                     }
                     if (!auto.exists()) {
                         Log.i("info", "创建auto文件夹");

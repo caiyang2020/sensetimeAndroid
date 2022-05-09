@@ -62,7 +62,7 @@ public class EnableTaskService {
         //sdk 准备
         LogUtils.i("Start SDK preparation");
         NfsServer.getFile(mContext, task.getSdkPath(), "sdk");
-        sleep(5000);
+        sleep(3000);
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
@@ -94,7 +94,7 @@ public class EnableTaskService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println(gtList);
+//        System.out.println(gtList);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -127,7 +127,6 @@ public class EnableTaskService {
 
                     File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path.replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                     if (Logfile.exists()) {
-//                        System.out.println("log存在，视频不下载");
                         num++;
                     } else {
                         path = path.replace("\uFEFF", "");
@@ -140,11 +139,9 @@ public class EnableTaskService {
             }
         }).start();
 
-//        Boolean status = true;
         while (true) {
             threadHashMap.put(task.getTaskName() + "runthread", Thread.currentThread());
             ThreadManager.setTaskList(threadHashMap);
-//        System.out.println("等待任务执行");
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0).equals("finish")) {
                     System.out.println("任务运行完成");
@@ -165,20 +162,17 @@ public class EnableTaskService {
                     deviceMessage.setCode(1);
                     deviceMessage.setData(task.getTaskCode()+"");
                     System.out.println(JSON.toJSONString(deviceMessage));
-                    HttpUtil.get("http://10.151.5.190:9001/androidDone/"+task.getTaskCode());
+                    HttpUtil.get("http://10.151.4.123:9001/androidDone/"+task.getTaskCode());
                     LogUtils.i("finish");
-//                    status=false;
                     break;
                 }
-//                System.out.println("进入执行任务");
                 File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
-//                    System.out.println("log存在，下一任务");
                     readyVideo.remove(0);
                     continue;
                 }
-                LogUtils.i("cmd:" + "./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "_") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-
+//                LogUtils.i("cmd:" + "./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "_") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
+                Log.i("INFO", "正在执行，当前进度" + process);
                 //标准平台SDK调用方式
 //                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
 //                        "pwd",
@@ -200,7 +194,6 @@ public class EnableTaskService {
 //                        "./bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
 
                 NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
-                Log.i("INFO", "正在执行，当前进度" + process);
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0).replaceAll("/", "^"));
                 readyVideo.remove(0);
@@ -215,11 +208,11 @@ public class EnableTaskService {
                     taskInfo.setTaskCode(task.getTaskCode());
                     taskInfo.setData(process+"");
                     System.out.println(JSON.toJSONString(taskInfo));
-                    HttpUtil.post("http://10.151.5.190:9001/andtoidrate",taskInfo);
+                    HttpUtil.post("http://10.151.4.123:9001/andtoidrate",taskInfo);
                 }
             }
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -228,7 +221,7 @@ public class EnableTaskService {
 
     static void sleep(long time) {
         try {
-//            System.gc();
+            System.gc();
             Thread.sleep(time);
         } catch (InterruptedException e) {
             e.printStackTrace();

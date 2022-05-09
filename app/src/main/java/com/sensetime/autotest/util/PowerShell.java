@@ -49,15 +49,16 @@ public class PowerShell {
 //                   break;
 //               }
             }
-            InputStream is = process.getErrorStream();
-            System.out.println(is.read());
-            Log.i("error", String.valueOf(is.read()));
-            BufferedReader errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            while ((errorInfo = errorResult.readLine()) != null) {
-                Log.i("info",errorInfo);
-            }
+//            InputStream is = process.getErrorStream();
+//            System.out.println(is.read());
+//            Log.i("error", String.valueOf(is.read()));
+//            BufferedReader errorResult = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+//            while ((errorInfo = errorResult.readLine()) != null) {
+//                Log.i("info",errorInfo);
+//            }
+            process.waitFor();
             process.destroy();
-        } catch (IOException  e) {
+        } catch (IOException | InterruptedException  e) {
             e.printStackTrace();
         }
     }
