@@ -1,12 +1,10 @@
 package com.sensetime.autotest.service;
 
+import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
-
+import androidx.annotation.Nullable;
 import com.alibaba.fastjson.JSON;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
@@ -16,28 +14,23 @@ import com.sensetime.autotest.server.NfsServer;
 import com.sensetime.autotest.util.HttpUtil;
 import com.sensetime.autotest.util.ThreadManager;
 import com.sensetime.autotest.util.PowerShell;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-public class EnableTaskService {
+public class EnableTaskService extends IntentService {
 
-    private final Context mContext;
+    private final Context mContext=getApplicationContext();
 
     List<String> gtList = new LinkedList<String>();
 
-    int num = 0;
-
     private final List<String> readyVideo = new LinkedList<String>();
+
+    int num = 0;
 
     int gtNum = 0;
 
@@ -49,24 +42,35 @@ public class EnableTaskService {
 
     private final Intent intent = new Intent("com.caisang");
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    public EnableTaskService(Context context) {
-        this.mContext = context;
-        webSocketService =  mContext.getSystemService(WebSocketService.class);;
+    /**
+     * Creates an IntentService.  Invoked by your subclass's constructor.
+     *
+     * @param name Used to name the worker thread, important only for debugging.
+     */
+    public EnableTaskService() {
+        super("EnableTaskService");
     }
 
+//    @RequiresApi(api = Build.VERSION_CODES.M)
+//    public EnableTaskService(Context context) {
+//        this.mContext = context;
+//        webSocketService =  mContext.getSystemService(WebSocketService.class);;
+//    }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+
+//    @RequiresApi(api = Build.VERSION_CODES.M)
     public String init(Task task) {
 
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-        NfsServer.getFile(mContext, task.getSdkPath(), "sdk");
+//        NfsServer.getFile(mContext, task.getSdkPath(), "sdk");
+        HttpUtil.downloadFile(mContext, task.getSdkPath(), "sdk");
         sleep(3000);
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
-        NfsServer.getFile(mContext, task.getGtPath(), "gt");
+//        NfsServer.getFile(mContext, task.getGtPath(), "gt");
+        HttpUtil.downloadFile(mContext, task.getGtPath(), "gt");
         LogUtils.i("Gt preparation is complete");
         //分析生成GT列表
         prepareGtList(mContext, task);
@@ -97,7 +101,7 @@ public class EnableTaskService {
 //        System.out.println(gtList);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+//    @RequiresApi(api = Build.VERSION_CODES.M)
     public void runTask(Context context, Task task) {
 
         HashMap<String, Thread> threadHashMap = new HashMap<>();
@@ -131,8 +135,9 @@ public class EnableTaskService {
                     } else {
                         path = path.replace("\uFEFF", "");
                         NfsServer.getFile(context, path, "video");
+                        HttpUtil.downloadFile(mContext, path, "video");
                         readyVideo.add(path);
-                        System.out.println(readyVideo.get(0));
+//                        System.out.println(readyVideo.get(0));
                     }
                 }
                 readyVideo.add("finish");
@@ -226,5 +231,15 @@ public class EnableTaskService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onHandleIntent(@Nullable Intent intent) {
+
+        assert intent != null;
+        String task = intent.getExtras().getString("task");
+        Task task1 = JSON.parseObject(task, Task.class);
+        init(task1);
+
     }
 }

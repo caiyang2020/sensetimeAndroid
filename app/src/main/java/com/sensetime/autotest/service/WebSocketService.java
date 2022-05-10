@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -103,13 +104,18 @@ public class WebSocketService extends Service {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
-                System.out.println(message);
+                Intent intentTask = new Intent("com.sensetime.autotest");
+                Bundle bundle = new Bundle();
+                bundle.putString("task",message);
+                intentTask.putExtras(bundle);
+                startService(intentTask);
+//                System.out.println(message);
 //                System.out.println("收到一次消息");
-                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
-                Task task= JSON.parseObject(message, Task.class);
-                intent.putExtra("task",JSON.toJSONString(task));
-                sendBroadcast(intent);
-                enableTaskService.init(task);
+//                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
+//                Task task= JSON.parseObject(message, Task.class);
+//                intent.putExtra("task",JSON.toJSONString(task));
+//                sendBroadcast(intent);
+//                enableTaskService.init(task);
             }
 
             @Override

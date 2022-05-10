@@ -43,6 +43,14 @@
             android:exported="false"
             android:process=":gray" />
 
+        <service android:name=".service.EnableTaskService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.sensetime.autotest">
+                </action>
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

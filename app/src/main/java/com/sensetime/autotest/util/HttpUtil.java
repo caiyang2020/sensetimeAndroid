@@ -1,8 +1,11 @@
 package com.sensetime.autotest.util;
 
+import android.content.Context;
+import android.os.Environment;
+import android.util.Log;
 import com.alibaba.fastjson.JSON;
-
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -10,6 +13,15 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Sink;
 
 public class HttpUtil {
 
@@ -81,6 +93,117 @@ public class HttpUtil {
             e.printStackTrace();
         }
     }
+
+
+    public void getAsyn(String url) {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).build();
+        Call call = client.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                //...
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if(response.isSuccessful()){
+                    String result = response.body().string();
+                    //处理UI需要切换到UI线程处理
+                }
+            }
+        });
+    }
+
+    public void post(String url,String key,String value){
+        OkHttpClient client = new OkHttpClient();
+        FormBody body = new FormBody.Builder()
+                .add(key,value)
+                .build();
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+        Call call = client.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                //...
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if(response.isSuccessful()){
+                    String result = response.body().string();
+                    //处理UI需要切换到UI线程处理
+                }
+            }
+        });
+    }
+
+
+    public static void downloadFile(Context mContext, String file,String type){
+        //下载路径，如果路径无效了，可换成你的下载路径
+        final String url = "http://10.151.3.26:6868/"+file;
+//        final long startTime = System.currentTimeMillis();
+//        Log.i("DOWNLOAD","startTime="+startTime);
+
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+//                Log.i("DOWNLOAD","download failed");
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type){
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir()+"/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir()+"/Gt",url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "video":
+                        localFile = new File(mContext.getFilesDir()+"/Video",file.replaceAll("/","^"));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+
+                try {
+//                    String mSDCardPath= Environment.getExternalStorageDirectory().getAbsolutePath();
+//                    File dest = new File(mSDCardPath,   url.substring(url.lastIndexOf("/") + 1));
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+
+                    bufferedSink.close();
+//                    Log.i("DOWNLOAD","download success");
+//                    Log.i("DOWNLOAD","totalTime="+ (System.currentTimeMillis() - startTime));
+                } catch (Exception e) {
+                    e.printStackTrace();
+//                    Log.i("DOWNLOAD","download failed");
+                } finally {
+                    if(bufferedSink != null){
+                        bufferedSink.close();
+                    }
+
+                }
+            }
+        });
+    }
+
+
+
+
+
 
 }
 
