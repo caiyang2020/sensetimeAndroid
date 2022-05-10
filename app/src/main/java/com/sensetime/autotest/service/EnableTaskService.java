@@ -21,10 +21,12 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class EnableTaskService extends IntentService {
 
-    private final Context mContext=getApplicationContext();
+    private  Context mContext;
 
     List<String> gtList = new LinkedList<String>();
 
@@ -36,9 +38,6 @@ public class EnableTaskService extends IntentService {
 
     int process = 0;
 
-//    private final WebSocketServer webSocketServer;
-
-    WebSocketService webSocketService ;
 
     private final Intent intent = new Intent("com.caisang");
 
@@ -51,7 +50,6 @@ public class EnableTaskService extends IntentService {
         super("EnableTaskService");
     }
 
-//    @RequiresApi(api = Build.VERSION_CODES.M)
 //    public EnableTaskService(Context context) {
 //        this.mContext = context;
 //        webSocketService =  mContext.getSystemService(WebSocketService.class);;
@@ -60,18 +58,20 @@ public class EnableTaskService extends IntentService {
 
 //    @RequiresApi(api = Build.VERSION_CODES.M)
     public String init(Task task) {
-
+        CountDownLatch prepareTask = new CountDownLatch(2);
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-//        NfsServer.getFile(mContext, task.getSdkPath(), "sdk");
-        HttpUtil.downloadFile(mContext, task.getSdkPath(), "sdk");
-        sleep(3000);
+        HttpUtil.downloadFile(mContext,prepareTask, task.getSdkPath(), "sdk");
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
-//        NfsServer.getFile(mContext, task.getGtPath(), "gt");
-        HttpUtil.downloadFile(mContext, task.getGtPath(), "gt");
+        HttpUtil.downloadFile(mContext, prepareTask,task.getGtPath(), "gt");
         LogUtils.i("Gt preparation is complete");
+        try {
+            prepareTask.await(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         //分析生成GT列表
         prepareGtList(mContext, task);
         //程序运行
@@ -102,7 +102,9 @@ public class EnableTaskService extends IntentService {
     }
 
 //    @RequiresApi(api = Build.VERSION_CODES.M)
-    public void runTask(Context context, Task task) {
+    public void runTask(Context context, Task task)  {
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
 
         HashMap<String, Thread> threadHashMap = new HashMap<>();
 
@@ -138,11 +140,19 @@ public class EnableTaskService extends IntentService {
                         HttpUtil.downloadFile(mContext, path, "video");
                         readyVideo.add(path);
 //                        System.out.println(readyVideo.get(0));
+                        countDownLatch.countDown();
                     }
                 }
                 readyVideo.add("finish");
             }
         }).start();
+
+        try {
+            countDownLatch.await(30,TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
 
         while (true) {
             threadHashMap.put(task.getTaskName() + "runthread", Thread.currentThread());
@@ -150,8 +160,6 @@ public class EnableTaskService extends IntentService {
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0).equals("finish")) {
                     System.out.println("任务运行完成");
-//                    sleep(3000);
-
 //                    try {
 //                        String[] cmds = {"sh", "-c ", "su; cd " + context.getFilesDir() + "/Log; tar -zcvf " + task.getTaskName() + ".tar.gz ./" + task.getTaskName()};
 //                        Process process = Runtime.getRuntime().exec(cmds);
@@ -160,9 +168,6 @@ public class EnableTaskService extends IntentService {
 //                    } catch (InterruptedException | IOException e) {
 //                        e.printStackTrace();
 //                    }
-//                    NfsServer.uploadFile(context.getFilesDir() + "/Log/" + task.getTaskName() + ".tar.gz", task.getTaskName());
-//                    webSocketServer.send("执行任务完成");
-
                     DeviceMessage<String> deviceMessage = new DeviceMessage<String>();
                     deviceMessage.setCode(1);
                     deviceMessage.setData(task.getTaskCode()+"");
@@ -198,7 +203,7 @@ public class EnableTaskService extends IntentService {
 //                        "source profile",
 //                        "./bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
 
-                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
+//                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0).replaceAll("/", "^"));
                 readyVideo.remove(0);
@@ -217,7 +222,7 @@ public class EnableTaskService extends IntentService {
                 }
             }
             try {
-                Thread.sleep(500);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -238,6 +243,7 @@ public class EnableTaskService extends IntentService {
 
         assert intent != null;
         String task = intent.getExtras().getString("task");
+        mContext = getBaseContext();
         Task task1 = JSON.parseObject(task, Task.class);
         init(task1);
 

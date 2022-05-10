@@ -43,10 +43,9 @@
             android:exported="false"
             android:process=":gray" />
 
-        <service android:name=".service.EnableTaskService"
-            android:exported="false">
+        <service android:name=".service.EnableTaskService">
             <intent-filter>
-                <action android:name="com.sensetime.autotest">
+                <action android:name="com.auto.test">
                 </action>
             </intent-filter>
         </service>

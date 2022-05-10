@@ -104,11 +104,13 @@ public class WebSocketService extends Service {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
-                Intent intentTask = new Intent("com.sensetime.autotest");
-                Bundle bundle = new Bundle();
-                bundle.putString("task",message);
-                intentTask.putExtras(bundle);
-                startService(intentTask);
+//                Intent intentTask = new Intent("com.sensetime.autotest");
+//                Bundle bundle = new Bundle();
+//                bundle.putString("task",message);
+//                intentTask.putExtras(bundle);
+//                startService(intentTask);
+                intent.putExtra("task",message);
+                sendBroadcast(intent);
 //                System.out.println(message);
 //                System.out.println("收到一次消息");
 //                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());

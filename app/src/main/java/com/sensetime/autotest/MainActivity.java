@@ -163,14 +163,34 @@ public class MainActivity extends AppCompatActivity {
         //消息接收模块
         @Override
         public void onReceive(Context context, Intent intent) {
-            int process = intent.getIntExtra("process",1000);
-            Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);
-            if (task!=null) {
-                taskName.setText(task.getTaskName());
-                sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replace(".tar", ""));
-                funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length - 1].replace(".csv", ""));
-                runFunc.setText(task.getFunc());
+
+
+            String message = null;
+            if ((message = intent.getStringExtra("task")) != null)
+//            {String message = intent.getStringExtra("task");
+            {
+                Intent intentTask = new Intent();
+                intentTask.setPackage(getPackageName());
+                intentTask.setAction("com.auto.test");
+                Bundle bundle = new Bundle();
+                bundle.putString("task", message);
+                intentTask.putExtras(bundle);
+//                intentTask.putExtra("context", (Parcelable) context);
+                startService(intentTask);
+                System.out.println("任务启动");
             }
+
+
+
+
+            int process = intent.getIntExtra("process",1000);
+//            Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);
+//            if (task!=null) {
+//                taskName.setText(task.getTaskName());
+//                sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replace(".tar", ""));
+//                funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length - 1].replace(".csv", ""));
+//                runFunc.setText(task.getFunc());
+//            }
             if (process!=1000) {
                 pb.setProgress(process);
                 pbText.setText(process + "%");

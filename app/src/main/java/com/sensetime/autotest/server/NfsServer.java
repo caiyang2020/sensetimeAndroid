@@ -88,7 +88,7 @@ public class NfsServer extends Service {
                             "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/",
                             "chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar",""));
                     String[] cmds = {"sh","-c","su;cd " +context.getFilesDir() + "/Sdk;tar -xvf " + nfsFile.getName() + "\\ -C /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar","")};
-                    System.out.println(cmds);
+//                    System.out.println(cmds);
                 }
             }else {
                 Log.i("info","文件已存在,不进入下载");
