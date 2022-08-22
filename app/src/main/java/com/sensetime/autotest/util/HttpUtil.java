@@ -2,6 +2,7 @@ package com.sensetime.autotest.util;
 
 import android.content.Context;
 import android.os.Environment;
+import android.os.strictmode.ServiceConnectionLeakedViolation;
 import android.util.Log;
 import com.alibaba.fastjson.JSON;
 import java.io.BufferedReader;
@@ -255,16 +256,20 @@ public class HttpUtil {
                     bufferedSink.writeAll(response.body().source());
 
                     bufferedSink.close();
+                    Thread.sleep(1000);
 //                    Log.i("DOWNLOAD","download success");
 //                    Log.i("DOWNLOAD","totalTime="+ (System.currentTimeMillis() - startTime));
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
 //                            "mkdir "+nfsFile.getName().replace(".tar",""),
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
-                                "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C /data/local/tmp/AutoTest/",
-                                "chmod -R 777 /data/local/tmp/AutoTest/"+ url.substring(url.lastIndexOf("/") + 1) .replace(".tar",""));
-                        String[] cmds = {"sh","-c","su;cd " +mContext.getFilesDir() + "/Sdk;tar -xvf " + url.substring(url.lastIndexOf("/") + 1)  + "\\ -C /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+url.substring(url.lastIndexOf("/") + 1) .replace(".tar","")};
-                        System.out.println(cmds);
+                                "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/"+ url.substring(url.lastIndexOf("/") + 1).replace(".tar",""));
+//                        String[] cmds = {"sh","-c","su;cd " +mContext.getFilesDir() + "/Sdk;tar -zxvf " + url.substring(url.lastIndexOf("/") + 1)  + " /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+url.substring(url.lastIndexOf("/") + 1) .replace(".tgz","")};
+//                        System.out.println(cmds);
+//                        Process pro = Runtime.getRuntime().exec(cmds);
+//                        pro.waitFor();
+//                        pro.destroy();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

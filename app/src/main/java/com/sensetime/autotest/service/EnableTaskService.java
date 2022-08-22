@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.sql.SQLOutput;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,9 +29,9 @@ public class EnableTaskService extends IntentService {
 
     private  Context mContext;
 
-    List<String> gtList = new LinkedList<String>();
+    List<String[]> gtList = new LinkedList<>();
 
-    private final List<String> readyVideo = new LinkedList<String>();
+    private final List<String[]> readyVideo = new LinkedList<>();
 
     int num = 0;
 
@@ -62,6 +63,7 @@ public class EnableTaskService extends IntentService {
         //sdk 准备
         LogUtils.i("Start SDK preparation");
         HttpUtil.downloadFile(mContext,prepareTask, task.getSdkPath(), "sdk");
+//        prepareTask.countDown();
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
@@ -91,7 +93,12 @@ public class EnableTaskService extends IntentService {
             BufferedReader br = new BufferedReader(isr);
             String line;
             while ((line = br.readLine()) != null) {
-                gtList.add(line.split(",")[0]);
+                String[] strings = new String[4];
+                strings[0]=line.split(",")[0];
+                strings[1]=line.split(",")[1];
+                strings[2]=line.split(",")[2];
+                strings[3]=line.split(",")[3];
+                gtList.add(strings);
                 gtNum++;
             }
             System.out.println("共检测到" + gtNum + "条数据");
@@ -121,8 +128,8 @@ public class EnableTaskService extends IntentService {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                threadHashMap.put(task.getTaskName() + "downloadthread", Thread.currentThread());
-                for (String path : gtList) {
+//                threadHashMap.put(task.getTaskName() + "downloadthread", Thread.currentThread());
+                for (String[] path1 : gtList) {
                     try {
                         while (readyVideo.size() > 5) {
                             Thread.sleep(10000);
@@ -131,19 +138,26 @@ public class EnableTaskService extends IntentService {
                         e.printStackTrace();
                     }
 
-                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path.replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path1[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                     if (Logfile.exists()) {
                         num++;
                     } else {
-                        path = path.replace("\uFEFF", "");
-                        NfsServer.getFile(context, path, "video");
-                        HttpUtil.downloadFile(mContext, path, "video");
-                        readyVideo.add(path);
+                        String path = path1[0].replace("\uFEFF", "");
+//                        NfsServer.getFile(context, path, "video");
+                        CountDownLatch latch = new CountDownLatch(1);
+                        HttpUtil.downloadFile(mContext, latch,path, "video");
+                        try {
+                            latch.await(30,TimeUnit.SECONDS);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        readyVideo.add(path1);
 //                        System.out.println(readyVideo.get(0));
-                        countDownLatch.countDown();
+
                     }
                 }
-                readyVideo.add("finish");
+                String[] strings = {"finish"};
+                readyVideo.add(strings);
             }
         }).start();
 
@@ -155,10 +169,10 @@ public class EnableTaskService extends IntentService {
 
 
         while (true) {
-            threadHashMap.put(task.getTaskName() + "runthread", Thread.currentThread());
-            ThreadManager.setTaskList(threadHashMap);
+//            threadHashMap.put(task.getTaskName() + "runthread", Thread.currentThread());
+//            ThreadManager.setTaskList(threadHashMap);
             if (!readyVideo.isEmpty()) {
-                if (readyVideo.get(0).equals("finish")) {
+                if (readyVideo.get(0)[0].equals("finish")) {
                     System.out.println("任务运行完成");
 //                    try {
 //                        String[] cmds = {"sh", "-c ", "su; cd " + context.getFilesDir() + "/Log; tar -zcvf " + task.getTaskName() + ".tar.gz ./" + task.getTaskName()};
@@ -176,13 +190,13 @@ public class EnableTaskService extends IntentService {
                     LogUtils.i("finish");
                     break;
                 }
-                File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
                     readyVideo.remove(0);
                     continue;
                 }
 //                LogUtils.i("cmd:" + "./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "_") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-                Log.i("INFO", "正在执行，当前进度" + process);
+                Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0));
                 //标准平台SDK调用方式
 //                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
 //                        "pwd",
@@ -193,19 +207,16 @@ public class EnableTaskService extends IntentService {
                 PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
                         "pwd",
                         "source env.sh",
-                        "./samples_CAPI/bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","^")+" 30 > " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
+                        "./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
+                System.out.println("./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
 //                PowerShell.cmd(context, "cd /data/local/tmp/AutoTest/" + task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replaceAll("\\.[a-zA-z0-9]+$", "") + "/release/samples",
 //                        "pwd",
 //                        "source env.sh",
-//                        "./samples_CAPI/bin/" + task.getFunc() + " 1 " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^") + " 30 ./face.db 1 | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-//                PowerShell.cmd(context, "cd /data/local/tmp/AutoTest/" + task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replaceAll("\\.[a-zA-z0-9]+$", ""),
-//                        "pwd",
-//                        "source profile",
-//                        "./bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-
-//                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
+//                        "./samples_CAPI/bin/" + task.getFunc() + " 1 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
+//                System.out.println("./samples_CAPI/bin/" + task.getFunc() + " 0 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
+                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
-                        "rm " + readyVideo.get(0).replaceAll("/", "^"));
+                        "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                 readyVideo.remove(0);
                 num++;
 
@@ -217,7 +228,10 @@ public class EnableTaskService extends IntentService {
                     TaskInfo taskInfo  = new TaskInfo();
                     taskInfo.setTaskCode(task.getTaskCode());
                     taskInfo.setData(process+"");
-                    System.out.println(JSON.toJSONString(taskInfo));
+//                    System.out.println(JSON.toJSONString(taskInfo));
+
+                    LogUtils.d("taskProcess","任务: "+task.getTaskCode()+"， 进度更新为："+process);
+
                     HttpUtil.post("http://10.151.4.123:9001/andtoidrate",taskInfo);
                 }
             }
