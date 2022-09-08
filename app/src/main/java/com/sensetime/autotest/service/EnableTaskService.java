@@ -45,7 +45,7 @@ public class EnableTaskService extends IntentService {
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      *
-     * @param name Used to name the worker thread, important only for debugging.
+     * name Used to name the worker thread, important only for debugging.
      */
     public EnableTaskService() {
         super("EnableTaskService");
