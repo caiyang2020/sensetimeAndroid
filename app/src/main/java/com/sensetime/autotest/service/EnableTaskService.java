@@ -11,6 +11,7 @@ import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.NfsServer;
+import com.sensetime.autotest.util.FileUtil;
 import com.sensetime.autotest.util.HttpUtil;
 import com.sensetime.autotest.util.ThreadManager;
 import com.sensetime.autotest.util.PowerShell;
@@ -45,7 +46,7 @@ public class EnableTaskService extends IntentService {
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      *
-     * @param name Used to name the worker thread, important only for debugging.
+     * name Used to name the worker thread, important only for debugging.
      */
     public EnableTaskService() {
         super("EnableTaskService");
@@ -58,36 +59,38 @@ public class EnableTaskService extends IntentService {
 
 
 //    @RequiresApi(api = Build.VERSION_CODES.M)
-    public String init(Task task) {
+    public void init(Task task) {
         CountDownLatch prepareTask = new CountDownLatch(2);
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-        HttpUtil.downloadFile(mContext,prepareTask, task.getSdkPath(), "sdk");
+        HttpUtil.downloadFile(mContext,prepareTask, task.getSdkId(), "sdk");
 //        prepareTask.countDown();
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
-        HttpUtil.downloadFile(mContext, prepareTask,task.getGtPath(), "gt");
+        HttpUtil.downloadFile(mContext, prepareTask,task.getGtId(), "gt");
         LogUtils.i("Gt preparation is complete");
         try {
             prepareTask.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        //分析生成GT列表
-        prepareGtList(mContext, task);
-        //程序运行
 
-        runTask(mContext, task);
-        return null;
+        if (FileUtil.checkSdk()&&FileUtil.checkGt()){
+            //分析生成GT列表
+            prepareGtList(mContext, task);
+            //程序运行
+            runTask(mContext, task);
+        }else {
+            LogUtils.i("sdk或GT没准备好，不能执行任务");
+        }
     }
 
     public void prepareGtList(Context context, Task task) {
 
         InputStreamReader isr;
         String gtName;
-        String[] gts = task.getGtPath().split("/");
-        gtName = gts[gts.length - 1];
+        gtName = String.valueOf(task.getGtId())+"csv";
         try {
             isr = new InputStreamReader(new FileInputStream(new File(context.getFilesDir() + "/Gt/" + gtName)));
             BufferedReader br = new BufferedReader(isr);
@@ -115,8 +118,7 @@ public class EnableTaskService extends IntentService {
 
         HashMap<String, Thread> threadHashMap = new HashMap<>();
 
-        String[] sdk = task.getSdkPath().split("/");
-        String sdkName = sdk[sdk.length - 1].split("\\.")[0];
+        String sdkName = String.valueOf(task.getSdkId());
 
         //创建以任务名称创建log保存文件夹
         File dir = new File(context.getFilesDir() + "/Log/" + task.getTaskName());
@@ -182,10 +184,10 @@ public class EnableTaskService extends IntentService {
 //                    } catch (InterruptedException | IOException e) {
 //                        e.printStackTrace();
 //                    }
-                    DeviceMessage<String> deviceMessage = new DeviceMessage<String>();
-                    deviceMessage.setCode(1);
-                    deviceMessage.setData(task.getTaskCode()+"");
-                    System.out.println(JSON.toJSONString(deviceMessage));
+//                    DeviceMessage<String> deviceMessage = new DeviceMessage<String>();
+//                    deviceMessage.setCode(1);
+//                    deviceMessage.setData(task.getTaskCode()+"");
+//                    System.out.println(JSON.toJSONString(deviceMessage));
                     HttpUtil.get("http://10.151.4.123:9001/androidDone/"+task.getTaskCode());
                     LogUtils.i("finish");
                     break;
@@ -226,8 +228,8 @@ public class EnableTaskService extends IntentService {
                     intent.putExtra("process", process);
                     context.sendBroadcast(intent);
                     TaskInfo taskInfo  = new TaskInfo();
-                    taskInfo.setTaskCode(task.getTaskCode());
-                    taskInfo.setData(process+"");
+//                    taskInfo.setTaskCode(task.getTaskCode());
+//                    taskInfo.setData(process+"");
 //                    System.out.println(JSON.toJSONString(taskInfo));
 
                     LogUtils.d("taskProcess","任务: "+task.getTaskCode()+"， 进度更新为："+process);

@@ -17,7 +17,7 @@ public class WebSocketServer extends WebSocketClient {
     }
 
     public WebSocketServer(URI uri) {
-        super(uri);
+        super(uri,new Draft_6455());
     }
 
     @Override

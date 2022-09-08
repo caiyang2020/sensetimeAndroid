@@ -1,5 +1,7 @@
 package com.sensetime.autotest.entity;
 
+import androidx.annotation.NonNull;
+
 import java.io.Serializable;
 
 
@@ -8,37 +10,23 @@ import lombok.Data;
 @Data
 public class Task implements Serializable {
 
-    private int status;
+    String taskName;
 
-    public int getStatus() {
-        return status;
-    }
+    int projectId;
 
-    public void setStatus(int status) {
-        this.status = status;
-    }
+    int sdkId;
 
-    private int taskCode;
+    int gtId;
 
-    private int taskType;
+    String modelIds;
 
-    private String taskName;
+    int taskType;
 
-    private String SdkPath;
+    int createBy;
 
-    private String func;
+    String functionName;
 
-    private String GtPath;
-
-    private String deviceID;
-
-    public String getDeviceID() {
-        return deviceID;
-    }
-
-    public void setDeviceID(String deviceID) {
-        this.deviceID = deviceID;
-    }
+    String expandFieldOne;
 
     public String getTaskName() {
         return taskName;
@@ -48,28 +36,36 @@ public class Task implements Serializable {
         this.taskName = taskName;
     }
 
-    public String getSdkPath() {
-        return SdkPath;
+    public int getProjectId() {
+        return projectId;
     }
 
-    public void setSdkPath(String sdkPath) {
-        SdkPath = sdkPath;
+    public void setProjectId(int projectId) {
+        this.projectId = projectId;
     }
 
-    public String getFunc() {
-        return func;
+    public int getSdkId() {
+        return sdkId;
     }
 
-    public void setFunc(String func) {
-        this.func = func;
+    public void setSdkId(int sdkId) {
+        this.sdkId = sdkId;
     }
 
-    public String getGtPath() {
-        return GtPath;
+    public int getGtId() {
+        return gtId;
     }
 
-    public void setGtPath(String gtPath) {
-        GtPath = gtPath;
+    public void setGtId(int gtId) {
+        this.gtId = gtId;
+    }
+
+    public String getModelIds() {
+        return modelIds;
+    }
+
+    public void setModelIds(String modelIds) {
+        this.modelIds = modelIds;
     }
 
     public int getTaskType() {
@@ -80,11 +76,44 @@ public class Task implements Serializable {
         this.taskType = taskType;
     }
 
-    public int getTaskCode() {
-        return taskCode;
+    public String getFunctionName() {
+        return functionName;
     }
 
-    public void setTaskCode(int taskCode) {
-        this.taskCode = taskCode;
+    public void setFunctionName(String functionName) {
+        this.functionName = functionName;
     }
+
+    public String getExpandFieldOne() {
+        return expandFieldOne;
+    }
+
+    public void setExpandFieldOne(String expandFieldOne) {
+        this.expandFieldOne = expandFieldOne;
+    }
+
+    public int getCreateBy() {
+        return createBy;
+    }
+
+    public void setCreateBy(int createBy) {
+        this.createBy = createBy;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "TaskInfo{" +
+                "taskName='" + taskName + '\'' +
+                ", projectId=" + projectId +
+                ", sdkId=" + sdkId +
+                ", gtId=" + gtId +
+                ", modelIds='" + modelIds + '\'' +
+                ", taskType=" + taskType +
+                ", functionName='" + functionName + '\'' +
+                ", expandFieldOne='" + expandFieldOne + '\'' +
+                '}';
+    }
+
+
 }

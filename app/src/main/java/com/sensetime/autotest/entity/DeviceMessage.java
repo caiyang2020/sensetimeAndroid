@@ -2,18 +2,20 @@ package com.sensetime.autotest.entity;
 
 import java.io.Serializable;
 
-public class DeviceMessage<T> implements Serializable {
+import lombok.Data;
+
+public class DeviceMessage implements Serializable{
 
     private int code;
 
-    private T data;
+    private String data;
 
 
-    public T getData() {
+    public String getData() {
         return data;
     }
 
-    public void setData(T message) {
+    public void setData(String message) {
         this.data = message;
     }
 
@@ -25,4 +27,11 @@ public class DeviceMessage<T> implements Serializable {
         this.code = code;
     }
 
+    @Override
+    public String toString() {
+        return "DeviceMessage{" +
+                "code=" + code +
+                ", data='" + data + '\'' +
+                '}';
+    }
 }

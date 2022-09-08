@@ -6,15 +6,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-
 import androidx.annotation.RequiresApi;
 
 import com.alibaba.fastjson.JSON;
+import com.apkfuns.logutils.LogUtils;
+import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
+import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.util.Wsutil;
 import org.java_websocket.handshake.ServerHandshake;
@@ -104,13 +105,23 @@ public class WebSocketService extends Service {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
+                DeviceMessage deviceMessage = JSON.parseObject(message,DeviceMessage.class);
+                switch (deviceMessage.getCode()){
+                    case 0:
+                        break;
+                    case 1:
+                        LogUtils.i("收到服务端发送的任务，开始运行任务");
+                        Task taskInfo = JSON.parseObject(deviceMessage.getData(),Task.class);
+                        intent.putExtra("task",deviceMessage.getData());
+                        sendBroadcast(intent);
+                }
+
+
 //                Intent intentTask = new Intent("com.sensetime.autotest");
 //                Bundle bundle = new Bundle();
 //                bundle.putString("task",message);
 //                intentTask.putExtras(bundle);
 //                startService(intentTask);
-                intent.putExtra("task",message);
-                sendBroadcast(intent);
 //                System.out.println(message);
 //                System.out.println("收到一次消息");
 //                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
@@ -184,8 +195,8 @@ public class WebSocketService extends Service {
 
 
     private static final long HEART_BEAT_RATE = 10 * 1000;//每隔10秒进行一次对长连接的心跳检测
-    private Handler mHandler = new Handler();
-    private Runnable heartBeatRunnable = new Runnable() {
+    private final Handler mHandler = new Handler();
+    private final Runnable heartBeatRunnable = new Runnable() {
         @Override
         public void run() {
 //            client.send("心跳包");
@@ -196,7 +207,6 @@ public class WebSocketService extends Service {
                 }
             } else {
                 //如果client已为空，重新初始化连接
-                client = null;
                 initSocketClient();
             }
             //每隔一定的时间，对长连接进行一次心跳检测
@@ -210,7 +220,7 @@ public class WebSocketService extends Service {
             @Override
             public void run() {
                 try {
-//                    client.send("000000000");
+                    Thread.sleep(1000);
                     Log.e("JWebSocketClientService", "开启重连");
                     client.reconnectBlocking();
                 } catch (InterruptedException e) {

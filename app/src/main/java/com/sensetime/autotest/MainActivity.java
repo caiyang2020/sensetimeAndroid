@@ -43,7 +43,15 @@ import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.LinkedList;
+import java.util.Objects;
+
+import lombok.Data;
+import lombok.SneakyThrows;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -100,8 +108,10 @@ public class MainActivity extends AppCompatActivity {
         bindService();
     }
 
+    @SneakyThrows
     @RequiresApi(api = Build.VERSION_CODES.N)
-    private void initLog() {
+    private void initLog()  {
+
         LogUtils.getLogConfig()
                 .configAllowLog(true)
                 .configTagPrefix("app")
@@ -113,6 +123,24 @@ public class MainActivity extends AppCompatActivity {
                 .configLog2FilePath(getDataDir()+"/cache")
                 .configLog2FileNameFormat("%d{yyyyMMdd}.txt")
                 .configLogFileEngine(new LogFileEngineFactory(mContext));
+
+        File logDir = new File(getDataDir()+"/cache");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.DATE, calendar.get(Calendar.DATE) - 7);
+        Date lastDay = calendar.getTime();
+        System.out.println(sdf.format(lastDay));
+        for (File file : Objects.requireNonNull(logDir.listFiles())) {
+            try {
+                Date trueDay = sdf.parse(file.toString().split("/")[file.toString().split("/").length-1].replace(".txt",""));
+                assert trueDay != null;
+                if (trueDay.compareTo(lastDay)<0){
+                    file.delete();
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void openDataBase() {
