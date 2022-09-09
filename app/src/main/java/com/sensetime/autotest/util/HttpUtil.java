@@ -1,10 +1,9 @@
 package com.sensetime.autotest.util;
 
 import android.content.Context;
-import android.os.Environment;
-import android.os.strictmode.ServiceConnectionLeakedViolation;
-import android.util.Log;
 import com.alibaba.fastjson.JSON;
+import com.apkfuns.logutils.LogUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -283,5 +283,140 @@ public class HttpUtil {
             }
         });
     }
+
+    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type){
+        //下载路径，如果路径无效了，可换成你的下载路径
+        String sourcePath;
+        switch (type){
+            case "sdk":
+                sourcePath ="/data/TestBetterWorkSpace/sdk/"+fileId+"tar.gz";
+                break;
+            case "gt":
+                sourcePath ="/data/TestBetterWorkSpace/gt/"+fileId+"csv";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+        final String url = "http://10.151.5.190:6868"+sourcePath;
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+                LogUtils.i("DOWNLOAD","download failed");
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type){
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir()+"/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir()+"/Gt",url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+                String filename = url.substring(url.lastIndexOf("/") + 1);
+                try {
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+                    if (type.equalsIgnoreCase("sdk")) {
+                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+                                "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/"+ url.substring(url.lastIndexOf("/") + 1).replace(".tar",""));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if(bufferedSink != null){
+                        bufferedSink.close();
+                    }
+                    countDownLatch.countDown();
+                }
+            }
+        });
+    }
+
+    public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type){
+        //下载路径，如果路径无效了，可换成你的下载路径
+        final String url = "http://10.151.5.191:6868/"+file;
+//        final long startTime = System.currentTimeMillis();
+//        Log.i("DOWNLOAD","startTime="+startTime);
+
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+//                Log.i("DOWNLOAD","download failed");
+            }
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type){
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir()+"/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir()+"/Gt",url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "video":
+                        localFile = new File(mContext.getFilesDir()+"/Video",file.replaceAll("/","^"));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+                String filename = url.substring(url.lastIndexOf("/") + 1);
+                try {
+//                    String mSDCardPath= Environment.getExternalStorageDirectory().getAbsolutePath();
+//                    File dest = new File(mSDCardPath,   url.substring(url.lastIndexOf("/") + 1));
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+//                    Log.i("DOWNLOAD","download success");
+//                    Log.i("DOWNLOAD","totalTime="+ (System.currentTimeMillis() - startTime));
+                    if (type.equalsIgnoreCase("sdk")) {
+                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+//                            "mkdir "+nfsFile.getName().replace(".tar",""),
+//                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
+                                "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/"+ url.substring(url.lastIndexOf("/") + 1).replace(".tar",""));
+//                        String[] cmds = {"sh","-c","su;cd " +mContext.getFilesDir() + "/Sdk;tar -zxvf " + url.substring(url.lastIndexOf("/") + 1)  + " /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+url.substring(url.lastIndexOf("/") + 1) .replace(".tgz","")};
+//                        System.out.println(cmds);
+//                        Process pro = Runtime.getRuntime().exec(cmds);
+//                        pro.waitFor();
+//                        pro.destroy();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+//                    Log.i("DOWNLOAD","download failed");
+                } finally {
+                    if(bufferedSink != null){
+                        bufferedSink.close();
+                    }
+                    semaphore.release();
+                }
+            }
+        });
+    }
+
 }
 

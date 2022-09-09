@@ -12,23 +12,30 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.util.MonitoringUtil;
 import com.sensetime.autotest.util.Wsutil;
 import org.java_websocket.handshake.ServerHandshake;
+import org.jboss.netty.util.internal.SystemPropertyUtil;
+
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class WebSocketService extends Service {
 
     private final static int GRAY_SERVICE_ID = 1001;
 
-    private static final long CLOSE_RECON_TIME = 100;
+    private static final long CLOSE_RECON_TIME = 3000;
 
-    private Context mContext;
+//    private Context mContext = getBaseContext();
 
     private URI uri;
 
@@ -108,14 +115,30 @@ public class WebSocketService extends Service {
                 DeviceMessage deviceMessage = JSON.parseObject(message,DeviceMessage.class);
                 switch (deviceMessage.getCode()){
                     case 0:
+                        DeviceMessage<Map<String,Object>> resMsg = new DeviceMessage<>();
+                        Map<String,Object> respMap = new HashMap<>(1);
+                        respMap.put("status",1);
+                        if (MonitoringUtil.isServiceWorked(getBaseContext(),"EnableTaskService")){
+                            resMsg.setCode(0);
+                            respMap.put("status",1);
+                            resMsg.setData(respMap);
+                            sendMsg(JSON.toJSONString(resMsg));
+                        }else {
+                            resMsg.setCode(0);
+                            respMap.put("status",0);
+                            resMsg.setData(respMap);
+                            sendMsg(JSON.toJSONString(resMsg));
+                        }
                         break;
                     case 1:
                         LogUtils.i("收到服务端发送的任务，开始运行任务");
-                        Task taskInfo = JSON.parseObject(deviceMessage.getData(),Task.class);
-                        intent.putExtra("task",deviceMessage.getData());
+//                        Task taskInfo = JSON.parseObject(deviceMessage.getData(),Task.class);
+                        JSONObject jsonObject = JSONObject.parseObject(message);
+                        JSONObject json1 = JSONObject.parseObject(jsonObject.getString("data"));
+                        System.out.println(json1.get("cmd"));
+                        intent.putExtra("task",json1.toJSONString());
                         sendBroadcast(intent);
                 }
-
 
 //                Intent intentTask = new Intent("com.sensetime.autotest");
 //                Bundle bundle = new Bundle();

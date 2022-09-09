@@ -38,11 +38,13 @@ import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
+import com.sensetime.autotest.util.MonitoringUtil;
 import com.sensetime.autotest.util.Wsutil;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -105,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
         //启动服务
         startJWebSClientService();
         //绑定服务
-        bindService();
+
+
+
     }
 
     @SneakyThrows

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
@@ -20,11 +21,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.sql.SQLOutput;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import lombok.SneakyThrows;
 
 public class EnableTaskService extends IntentService {
 
@@ -52,13 +57,6 @@ public class EnableTaskService extends IntentService {
         super("EnableTaskService");
     }
 
-//    public EnableTaskService(Context context) {
-//        this.mContext = context;
-//        webSocketService =  mContext.getSystemService(WebSocketService.class);;
-//    }
-
-
-//    @RequiresApi(api = Build.VERSION_CODES.M)
     public void init(Task task) {
         CountDownLatch prepareTask = new CountDownLatch(2);
         //sdk 准备
@@ -96,11 +94,8 @@ public class EnableTaskService extends IntentService {
             BufferedReader br = new BufferedReader(isr);
             String line;
             while ((line = br.readLine()) != null) {
-                String[] strings = new String[4];
-                strings[0]=line.split(",")[0];
-                strings[1]=line.split(",")[1];
-                strings[2]=line.split(",")[2];
-                strings[3]=line.split(",")[3];
+                String[] strings = line.split(",");
+                strings[0] = strings[0].replace("\uFEFF","");
                 gtList.add(strings);
                 gtNum++;
             }
@@ -108,29 +103,24 @@ public class EnableTaskService extends IntentService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-//        System.out.println(gtList);
     }
 
-//    @RequiresApi(api = Build.VERSION_CODES.M)
+    @SneakyThrows
     public void runTask(Context context, Task task)  {
 
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-
-        HashMap<String, Thread> threadHashMap = new HashMap<>();
-
-        String sdkName = String.valueOf(task.getSdkId());
+        final Semaphore taskSemaphore = new Semaphore(0);
 
         //创建以任务名称创建log保存文件夹
-        File dir = new File(context.getFilesDir() + "/Log/" + task.getTaskName());
+         File dir = new File(context.getFilesDir() + "/Log/" + task.getTaskName());
         if (!dir.exists()) {
             dir.mkdir();
         }
         int total = gtNum;
 
         new Thread(new Runnable() {
+            final Semaphore semaphore = new Semaphore(1);
             @Override
             public void run() {
-//                threadHashMap.put(task.getTaskName() + "downloadthread", Thread.currentThread());
                 for (String[] path1 : gtList) {
                     try {
                         while (readyVideo.size() > 5) {
@@ -139,23 +129,19 @@ public class EnableTaskService extends IntentService {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
                     File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path1[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                     if (Logfile.exists()) {
                         num++;
                     } else {
-                        String path = path1[0].replace("\uFEFF", "");
-//                        NfsServer.getFile(context, path, "video");
-                        CountDownLatch latch = new CountDownLatch(1);
-                        HttpUtil.downloadFile(mContext, latch,path, "video");
+                        String path = path1[0];
                         try {
-                            latch.await(30,TimeUnit.SECONDS);
+                            semaphore.acquire();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
+                        HttpUtil.downloadFile(mContext, semaphore,path, "video");
                         readyVideo.add(path1);
-//                        System.out.println(readyVideo.get(0));
-
+                        taskSemaphore.release();
                     }
                 }
                 String[] strings = {"finish"};
@@ -163,16 +149,7 @@ public class EnableTaskService extends IntentService {
             }
         }).start();
 
-        try {
-            countDownLatch.await(30,TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-
         while (true) {
-//            threadHashMap.put(task.getTaskName() + "runthread", Thread.currentThread());
-//            ThreadManager.setTaskList(threadHashMap);
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0)[0].equals("finish")) {
                     System.out.println("任务运行完成");
@@ -188,34 +165,28 @@ public class EnableTaskService extends IntentService {
 //                    deviceMessage.setCode(1);
 //                    deviceMessage.setData(task.getTaskCode()+"");
 //                    System.out.println(JSON.toJSONString(deviceMessage));
-                    HttpUtil.get("http://10.151.4.123:9001/androidDone/"+task.getTaskCode());
+//                    HttpUtil.get("http://10.151.4.123:9001/androidDone/"+task.getTaskCode());
                     LogUtils.i("finish");
                     break;
+                }
+                try {
+                    taskSemaphore.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
                     readyVideo.remove(0);
                     continue;
                 }
-//                LogUtils.i("cmd:" + "./bin/" + task.getFunc() + " " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "_") + " 30  | tee " + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-                Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0));
-                //标准平台SDK调用方式
-//                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
-//                        "pwd",
-//                        "source env.sh",
-//                        "./samples_CAPI/bin/" + task.getFunc() + "  " + context.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/","^")+" 30  | tee " + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log") + " 2>&1");
-//                V362
-
-                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
+                Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0)[0]);
+                //拼接字符命令
+                String cmd = MessageFormat.format(task.getCmd(),readyVideo.get(0)[0],30,
+                        context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\""));
+                PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkRootPath(),
                         "pwd",
                         "source env.sh",
-                        "./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
-                System.out.println("./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
-//                PowerShell.cmd(context, "cd /data/local/tmp/AutoTest/" + task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replaceAll("\\.[a-zA-z0-9]+$", "") + "/release/samples",
-//                        "pwd",
-//                        "source env.sh",
-//                        "./samples_CAPI/bin/" + task.getFunc() + " 1 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
-//                System.out.println("./samples_CAPI/bin/" + task.getFunc() + " 0 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
+                        "./"+task.getSdkRunPath()+File.separator + task.getRunFunc()+ cmd);
                 NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
@@ -232,7 +203,7 @@ public class EnableTaskService extends IntentService {
 //                    taskInfo.setData(process+"");
 //                    System.out.println(JSON.toJSONString(taskInfo));
 
-                    LogUtils.d("taskProcess","任务: "+task.getTaskCode()+"， 进度更新为："+process);
+//                    LogUtils.d("taskProcess","任务: "+task.getTaskCode()+"， 进度更新为："+process);
 
                     HttpUtil.post("http://10.151.4.123:9001/andtoidrate",taskInfo);
                 }
@@ -258,10 +229,12 @@ public class EnableTaskService extends IntentService {
     protected void onHandleIntent(@Nullable Intent intent) {
 
         assert intent != null;
-        String task = intent.getExtras().getString("task");
+        JSONObject task = JSONObject.parseObject(intent.getExtras().getString("task"));
         mContext = getBaseContext();
-        Task task1 = JSON.parseObject(task, Task.class);
+        System.out.println(task);
+        Task task1=JSON.toJavaObject(task,Task.class);
         init(task1);
+
 
     }
 }

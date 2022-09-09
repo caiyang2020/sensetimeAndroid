@@ -1,4 +1,4 @@
-﻿package com.sensetime.autotest.util;
+package com.sensetime.autotest.util;
 
 import android.os.FileUtils;
 

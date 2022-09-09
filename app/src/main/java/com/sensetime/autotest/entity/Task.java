@@ -7,26 +7,29 @@ import java.io.Serializable;
 
 import lombok.Data;
 
-@Data
 public class Task implements Serializable {
+
+    Long sdkId;
 
     String taskName;
 
-    int projectId;
+    Long gtId;
 
-    int sdkId;
+    String sdkRootPath;
 
-    int gtId;
+    String sdkRunPath;
 
-    String modelIds;
+    String runFunc;
 
-    int taskType;
+    String cmd;
 
-    int createBy;
+    public Long getSdkId() {
+        return sdkId;
+    }
 
-    String functionName;
-
-    String expandFieldOne;
+    public void setSdkId(Long sdkId) {
+        this.sdkId = sdkId;
+    }
 
     public String getTaskName() {
         return taskName;
@@ -36,84 +39,56 @@ public class Task implements Serializable {
         this.taskName = taskName;
     }
 
-    public int getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(int projectId) {
-        this.projectId = projectId;
-    }
-
-    public int getSdkId() {
-        return sdkId;
-    }
-
-    public void setSdkId(int sdkId) {
-        this.sdkId = sdkId;
-    }
-
-    public int getGtId() {
+    public Long getGtId() {
         return gtId;
     }
 
-    public void setGtId(int gtId) {
+    public void setGtId(Long gtId) {
         this.gtId = gtId;
     }
 
-    public String getModelIds() {
-        return modelIds;
+    public String getSdkRootPath() {
+        return sdkRootPath;
     }
 
-    public void setModelIds(String modelIds) {
-        this.modelIds = modelIds;
+    public void setSdkRootPath(String sdkRootPath) {
+        this.sdkRootPath = sdkRootPath;
     }
 
-    public int getTaskType() {
-        return taskType;
+    public String getSdkRunPath() {
+        return sdkRunPath;
     }
 
-    public void setTaskType(int taskType) {
-        this.taskType = taskType;
+    public void setSdkRunPath(String sdkRunPath) {
+        this.sdkRunPath = sdkRunPath;
     }
 
-    public String getFunctionName() {
-        return functionName;
+    public String getRunFunc() {
+        return runFunc;
     }
 
-    public void setFunctionName(String functionName) {
-        this.functionName = functionName;
+    public void setRunFunc(String runFunc) {
+        this.runFunc = runFunc;
     }
 
-    public String getExpandFieldOne() {
-        return expandFieldOne;
+    public String getCmd() {
+        return cmd;
     }
 
-    public void setExpandFieldOne(String expandFieldOne) {
-        this.expandFieldOne = expandFieldOne;
+    public void setCmd(String cmd) {
+        this.cmd = cmd;
     }
 
-    public int getCreateBy() {
-        return createBy;
-    }
-
-    public void setCreateBy(int createBy) {
-        this.createBy = createBy;
-    }
-
-    @NonNull
     @Override
     public String toString() {
-        return "TaskInfo{" +
-                "taskName='" + taskName + '\'' +
-                ", projectId=" + projectId +
-                ", sdkId=" + sdkId +
+        return "Task{" +
+                "sdkId=" + sdkId +
+                ", taskName='" + taskName + '\'' +
                 ", gtId=" + gtId +
-                ", modelIds='" + modelIds + '\'' +
-                ", taskType=" + taskType +
-                ", functionName='" + functionName + '\'' +
-                ", expandFieldOne='" + expandFieldOne + '\'' +
+                ", sdkRootPath='" + sdkRootPath + '\'' +
+                ", sdkRunPath='" + sdkRunPath + '\'' +
+                ", runFunc='" + runFunc + '\'' +
+                ", cmd='" + cmd + '\'' +
                 '}';
     }
-
-
 }

@@ -4,18 +4,18 @@ import java.io.Serializable;
 
 import lombok.Data;
 
-public class DeviceMessage implements Serializable{
+public class DeviceMessage<T> implements Serializable{
 
     private int code;
 
-    private String data;
+    private T data;
 
 
-    public String getData() {
+    public T getData() {
         return data;
     }
 
-    public void setData(String message) {
+    public void setData(T message) {
         this.data = message;
     }
 
