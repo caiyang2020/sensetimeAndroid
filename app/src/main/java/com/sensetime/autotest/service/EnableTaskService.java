@@ -138,7 +138,7 @@ public class EnableTaskService extends IntentService {
                         e.printStackTrace();
                     }
 
-                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path1[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + path1[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".txt"));
                     if (Logfile.exists()) {
                         num++;
                     } else {
@@ -190,7 +190,7 @@ public class EnableTaskService extends IntentService {
                     LogUtils.i("finish");
                     break;
                 }
-                File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".txt"));
                 if (Logfile.exists()) {
                     readyVideo.remove(0);
                     continue;
@@ -214,7 +214,7 @@ public class EnableTaskService extends IntentService {
 //                        "source env.sh",
 //                        "./samples_CAPI/bin/" + task.getFunc() + " 1 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
 //                System.out.println("./samples_CAPI/bin/" + task.getFunc() + " 0 \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^") + "\" 30 ./face.db 1 > \"" + context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
-                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"),task.getTaskName());
+                NfsServer.uploadFile(context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".txt"),task.getTaskName());
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                 readyVideo.remove(0);
