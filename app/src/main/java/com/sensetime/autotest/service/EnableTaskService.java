@@ -207,7 +207,7 @@ public class EnableTaskService extends IntentService {
                 PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkPath().split("/")[task.getSdkPath().split("/").length-1].replaceAll("\\.[a-zA-z0-9]+$","")+"/release/samples",
                         "pwd",
                         "source env.sh",
-                        "./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
+                        "./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".txt\"") + " 2>&1");
                 System.out.println("./samples_CAPI/bin/" + task.getFunc() + "  \"" + context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/","^")+"\" 30 "+readyVideo.get(0)[1]+" "+readyVideo.get(0)[2]+" "+readyVideo.get(0)[3]+" > \"" + context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\"") + " 2>&1");
 //                PowerShell.cmd(context, "cd /data/local/tmp/AutoTest/" + task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replaceAll("\\.[a-zA-z0-9]+$", "") + "/release/samples",
 //                        "pwd",
