@@ -1,16 +1,22 @@
 package com.sensetime.autotest.service;
 
 import android.app.IntentService;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.util.Log;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.entity.TaskInfo;
+import com.sensetime.autotest.model.DateViewModel;
 import com.sensetime.autotest.server.NfsServer;
 import com.sensetime.autotest.util.FileUtil;
 import com.sensetime.autotest.util.HttpUtil;
@@ -45,8 +51,11 @@ public class EnableTaskService extends IntentService {
 
     int process = 0;
 
+    private WebSocketService webSocketService;
+
 
     private final Intent intent = new Intent("com.caisang");
+
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
@@ -58,10 +67,11 @@ public class EnableTaskService extends IntentService {
     }
 
     public void init(Task task) {
+        bindWebSocket();
         CountDownLatch prepareTask = new CountDownLatch(2);
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-        HttpUtil.downloadFile(mContext,prepareTask, task.getSdkId(), "sdk");
+        HttpUtil.downloadFile(mContext,prepareTask, task.getSdkId(), "sdk",task.getSdkRootPath());
 //        prepareTask.countDown();
         LogUtils.i("SDK preparation is complete");
         //gt 准备
@@ -73,7 +83,6 @@ public class EnableTaskService extends IntentService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
         if (FileUtil.checkSdk()&&FileUtil.checkGt()){
             //分析生成GT列表
             prepareGtList(mContext, task);
@@ -82,13 +91,19 @@ public class EnableTaskService extends IntentService {
         }else {
             LogUtils.i("sdk或GT没准备好，不能执行任务");
         }
+
+    }
+
+    private void bindWebSocket() {
+        Intent intent = new Intent(this,WebSocketService.class);
+        bindService(intent,coon,BIND_AUTO_CREATE);
     }
 
     public void prepareGtList(Context context, Task task) {
 
         InputStreamReader isr;
         String gtName;
-        gtName = String.valueOf(task.getGtId())+"csv";
+        gtName = String.valueOf(task.getGtId())+".csv";
         try {
             isr = new InputStreamReader(new FileInputStream(new File(context.getFilesDir() + "/Gt/" + gtName)));
             BufferedReader br = new BufferedReader(isr);
@@ -118,7 +133,7 @@ public class EnableTaskService extends IntentService {
         int total = gtNum;
 
         new Thread(new Runnable() {
-            final Semaphore semaphore = new Semaphore(1);
+            final Semaphore semaphore = new Semaphore(0);
             @Override
             public void run() {
                 for (String[] path1 : gtList) {
@@ -133,17 +148,20 @@ public class EnableTaskService extends IntentService {
                     if (Logfile.exists()) {
                         num++;
                     } else {
+                        CountDownLatch countDownLatch = new CountDownLatch(1);
                         String path = path1[0];
+                        HttpUtil.downloadFile(mContext, semaphore,path, "video");
                         try {
+                            System.out.println("请求下载文件");
+//                            countDownLatch.await(1,TimeUnit.MINUTES);
                             semaphore.acquire();
+                            System.out.println("请求下载文件完成");
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        HttpUtil.downloadFile(mContext, semaphore,path, "video");
                         readyVideo.add(path1);
                         taskSemaphore.release();
-                    }
-                }
+                    } }
                 String[] strings = {"finish"};
                 readyVideo.add(strings);
             }
@@ -153,14 +171,6 @@ public class EnableTaskService extends IntentService {
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0)[0].equals("finish")) {
                     System.out.println("任务运行完成");
-//                    try {
-//                        String[] cmds = {"sh", "-c ", "su; cd " + context.getFilesDir() + "/Log; tar -zcvf " + task.getTaskName() + ".tar.gz ./" + task.getTaskName()};
-//                        Process process = Runtime.getRuntime().exec(cmds);
-//
-//                        process.waitFor();
-//                    } catch (InterruptedException | IOException e) {
-//                        e.printStackTrace();
-//                    }
 //                    DeviceMessage<String> deviceMessage = new DeviceMessage<String>();
 //                    deviceMessage.setCode(1);
 //                    deviceMessage.setData(task.getTaskCode()+"");
@@ -181,8 +191,8 @@ public class EnableTaskService extends IntentService {
                 }
                 Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0)[0]);
                 //拼接字符命令
-                String cmd = MessageFormat.format(task.getCmd(),readyVideo.get(0)[0],30,
-                        context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log\""));
+                String cmd = MessageFormat.format(task.getCmd(),context.getFilesDir()+"/Video/"+readyVideo.get(0)[0].replaceAll("/","^"),30,
+                        context.getFilesDir() + "/Log/"+task.getTaskName()+"/"+ readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 PowerShell.cmd( context,"cd /data/local/tmp/AutoTest/"+task.getSdkRootPath(),
                         "pwd",
                         "source env.sh",
@@ -193,6 +203,15 @@ public class EnableTaskService extends IntentService {
                 readyVideo.remove(0);
                 num++;
 
+
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        webSocketService.sendMsg("运行完成一条");
+                    }
+                }).start();
+
                 if ((num * 100 / gtNum) > process) {
                     process = num * 100 / gtNum;
 //                    System.out.println(process);
@@ -202,17 +221,11 @@ public class EnableTaskService extends IntentService {
 //                    taskInfo.setTaskCode(task.getTaskCode());
 //                    taskInfo.setData(process+"");
 //                    System.out.println(JSON.toJSONString(taskInfo));
-
 //                    LogUtils.d("taskProcess","任务: "+task.getTaskCode()+"， 进度更新为："+process);
-
-                    HttpUtil.post("http://10.151.4.123:9001/andtoidrate",taskInfo);
+//                    HttpUtil.post("http://10.151.4.123:9001/andtoidrate",taskInfo);
                 }
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            sleep(100);
         }
     }
 
@@ -234,7 +247,17 @@ public class EnableTaskService extends IntentService {
         System.out.println(task);
         Task task1=JSON.toJavaObject(task,Task.class);
         init(task1);
-
-
     }
+
+    ServiceConnection coon  = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            webSocketService=((WebSocketService.JWebSocketClientBinder)service).getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
 }

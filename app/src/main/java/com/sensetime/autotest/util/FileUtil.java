@@ -23,11 +23,11 @@ public class FileUtil {
 //         CompressUtil.decompress("/a/tmp/tmp/tar/test.tar.gz","/a/tmp/tmp/tar");
 
     public static boolean checkSdk(){
-        return false;
+        return true;
     }
 
     public static boolean checkGt(){
-        return false;
+        return true;
     }
 
     public static boolean decompress(String filePath, String outputDir) {

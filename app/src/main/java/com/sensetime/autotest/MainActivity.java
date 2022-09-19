@@ -5,6 +5,8 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
@@ -36,6 +38,7 @@ import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.adapyer.MyAdapter;
 import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.entity.Task;
+import com.sensetime.autotest.model.DateViewModel;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
 import com.sensetime.autotest.util.MonitoringUtil;
@@ -107,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
         //启动服务
         startJWebSClientService();
         //绑定服务
+        bindService();
+
 
 
 

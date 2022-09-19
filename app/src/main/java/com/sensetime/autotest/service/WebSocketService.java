@@ -60,13 +60,8 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        //初始化websocket
-        initSocketClient();
-        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+//        initSocketClient();
+//        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
 
 //        //设置service为前台服务，提高优先级
 //        if (Build.VERSION.SDK_INT < 18) {
@@ -83,6 +78,30 @@ public class WebSocketService extends Service {
 //        }
 
 //        acquireWakeLock();
+//        return START_STICKY;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+//        //初始化websocket
+        initSocketClient();
+        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+//
+////        //设置service为前台服务，提高优先级
+////        if (Build.VERSION.SDK_INT < 18) {
+////            //Android4.3以下 ，隐藏Notification上的图标
+////            startForeground(GRAY_SERVICE_ID, new Notification());
+////        } else if(Build.VERSION.SDK_INT>18 && Build.VERSION.SDK_INT<25){
+////            //Android4.3 - Android7.0，隐藏Notification上的图标
+////            Intent innerIntent = new Intent(this, GrayInnerService.class);
+////            startService(innerIntent);
+////            startForeground(GRAY_SERVICE_ID, new Notification());
+////        }else{
+////            //Android7.0以上app启动后通知栏会出现一条"正在运行"的通知
+////            startForeground(GRAY_SERVICE_ID, new Notification());
+////        }
+//
+////        acquireWakeLock();
         return START_STICKY;
     }
 
@@ -118,7 +137,7 @@ public class WebSocketService extends Service {
                         DeviceMessage<Map<String,Object>> resMsg = new DeviceMessage<>();
                         Map<String,Object> respMap = new HashMap<>(1);
                         respMap.put("status",1);
-                        if (MonitoringUtil.isServiceWorked(getBaseContext(),"EnableTaskService")){
+                        if (MonitoringUtil.isServiceWorked(getBaseContext(),"com.sensetime.autotest.service.EnableTaskService")){
                             resMsg.setCode(0);
                             respMap.put("status",1);
                             resMsg.setData(respMap);
@@ -252,8 +271,6 @@ public class WebSocketService extends Service {
             }
         }.start();
     }
-
-
 
 //    //获取电源锁，保持该服务在屏幕熄灭时仍然获取CPU时，保持运行
 //    @SuppressLint("InvalidWakeLockTag")
