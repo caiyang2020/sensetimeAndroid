@@ -9,6 +9,8 @@ import lombok.Data;
 
 public class Task implements Serializable {
 
+    Long id;
+
     Long sdkId;
 
     String taskName;
@@ -22,6 +24,14 @@ public class Task implements Serializable {
     String runFunc;
 
     String cmd;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public Long getSdkId() {
         return sdkId;

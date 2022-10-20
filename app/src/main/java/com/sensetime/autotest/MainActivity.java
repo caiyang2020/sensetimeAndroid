@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         //启动服务
         startJWebSClientService();
         //绑定服务
-        bindService();
+//        bindService();
 
 
 

@@ -60,8 +60,8 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-//        initSocketClient();
-//        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+        initSocketClient();
+        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
 
 //        //设置service为前台服务，提高优先级
 //        if (Build.VERSION.SDK_INT < 18) {
@@ -84,24 +84,19 @@ public class WebSocketService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 //        //初始化websocket
-        initSocketClient();
-        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+//        initSocketClient();
+//        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+
+        if (client!=null&&client.isOpen()){
+            String message = intent.getStringExtra("message");
+            System.out.println("收到消息");
+            System.out.println(message);
+            sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
+        }
+
+
+
 //
-////        //设置service为前台服务，提高优先级
-////        if (Build.VERSION.SDK_INT < 18) {
-////            //Android4.3以下 ，隐藏Notification上的图标
-////            startForeground(GRAY_SERVICE_ID, new Notification());
-////        } else if(Build.VERSION.SDK_INT>18 && Build.VERSION.SDK_INT<25){
-////            //Android4.3 - Android7.0，隐藏Notification上的图标
-////            Intent innerIntent = new Intent(this, GrayInnerService.class);
-////            startService(innerIntent);
-////            startForeground(GRAY_SERVICE_ID, new Notification());
-////        }else{
-////            //Android7.0以上app启动后通知栏会出现一条"正在运行"的通知
-////            startForeground(GRAY_SERVICE_ID, new Notification());
-////        }
-//
-////        acquireWakeLock();
         return START_STICKY;
     }
 
@@ -123,6 +118,7 @@ public class WebSocketService extends Service {
     @Override
     public void onDestroy() {
         closeConnect();
+        LogUtils.w("ws被销毁");
         super.onDestroy();
     }
     private void initSocketClient() {
@@ -136,7 +132,6 @@ public class WebSocketService extends Service {
                     case 0:
                         DeviceMessage<Map<String,Object>> resMsg = new DeviceMessage<>();
                         Map<String,Object> respMap = new HashMap<>(1);
-                        respMap.put("status",1);
                         if (MonitoringUtil.isServiceWorked(getBaseContext(),"com.sensetime.autotest.service.EnableTaskService")){
                             resMsg.setCode(0);
                             respMap.put("status",1);
@@ -216,7 +211,7 @@ public class WebSocketService extends Service {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if (null != client) {
+                if (null != client&&client.isOpen()) {
                     client.send(msg);
                 }
             }
