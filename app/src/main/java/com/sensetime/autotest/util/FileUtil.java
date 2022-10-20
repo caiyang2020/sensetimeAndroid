@@ -22,11 +22,11 @@ public class FileUtil {
 
 //         CompressUtil.decompress("/a/tmp/tmp/tar/test.tar.gz","/a/tmp/tmp/tar");
 
-    public static boolean checkSdk(){
+    public static boolean checkSdk() {
         return true;
     }
 
-    public static boolean checkGt(){
+    public static boolean checkGt() {
         return true;
     }
 

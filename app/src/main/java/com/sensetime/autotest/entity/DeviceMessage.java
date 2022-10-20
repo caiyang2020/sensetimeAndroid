@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import lombok.Data;
 
-public class DeviceMessage<T> implements Serializable{
+public class DeviceMessage<T> implements Serializable {
 
     private int code;
 

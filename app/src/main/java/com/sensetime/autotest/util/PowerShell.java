@@ -15,27 +15,27 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class PowerShell {
-    Process process ;
+    Process process;
     DataOutputStream dos;
 
     public PowerShell() {
         try {
-            this.process=Runtime.getRuntime().exec("su");
+            this.process = Runtime.getRuntime().exec("su");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void cmd(String... cmds) {
-        String errorInfo ="";
-        String successInfo ="";
+        String errorInfo = "";
+        String successInfo = "";
         try {
-            Process process=Runtime.getRuntime().exec("su");
+            Process process = Runtime.getRuntime().exec("su");
             DataOutputStream dos = new DataOutputStream(process.getOutputStream());
-            dos.writeBytes("cd /data/data/com.sensetime.autotest"+"\n");
-            for (String cmd:
-                 cmds) {
-               dos.writeBytes(cmd+"\n");
+            dos.writeBytes("cd /data/data/com.sensetime.autotest" + "\n");
+            for (String cmd :
+                    cmds) {
+                dos.writeBytes(cmd + "\n");
             }
             dos.writeBytes("");
             dos.flush();
@@ -44,7 +44,7 @@ public class PowerShell {
 //            process.waitFor();
             BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while ((successInfo = br.readLine()) != null) {
-               Log.i("info",successInfo);
+                Log.i("info", successInfo);
 //               if ("Read video finished".equalsIgnoreCase(successInfo)){
 //                   break;
 //               }
@@ -58,22 +58,22 @@ public class PowerShell {
 //            }
             process.waitFor();
             process.destroy();
-        } catch (IOException | InterruptedException  e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
     public static void cmd(Context context, String... cmds) {
         Intent messageintent = new Intent("com.caisang");
-        String errorInfo ="";
-        String successInfo ="";
+        String errorInfo = "";
+        String successInfo = "";
         try {
-            Process process=Runtime.getRuntime().exec("su");
+            Process process = Runtime.getRuntime().exec("su");
             DataOutputStream dos = new DataOutputStream(process.getOutputStream());
-            dos.writeBytes("cd /data/data/com.sensetime.autotest"+"\n");
-            for (String cmd:
+            dos.writeBytes("cd /data/data/com.sensetime.autotest" + "\n");
+            for (String cmd :
                     cmds) {
-                dos.writeBytes(cmd+"\n");
+                dos.writeBytes(cmd + "\n");
             }
             dos.writeBytes("");
             dos.flush();
@@ -82,7 +82,7 @@ public class PowerShell {
 //            process.waitFor();
             BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             while ((successInfo = br.readLine()) != null) {
-                messageintent.putExtra("message",successInfo);
+                messageintent.putExtra("message", successInfo);
 //                Log.i("info",successInfo);
 //               if ("Read video finished".equalsIgnoreCase(successInfo)){
 //                   break;
@@ -97,11 +97,10 @@ public class PowerShell {
 ////                LogUtils.e("error",errorInfo);
 //            }
             process.destroy();
-        } catch (IOException  e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 
 
 }

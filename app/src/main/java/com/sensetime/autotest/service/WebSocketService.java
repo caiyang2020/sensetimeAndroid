@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+
 import androidx.annotation.RequiresApi;
 
 import com.alibaba.fastjson.JSON;
@@ -20,6 +21,7 @@ import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.util.MonitoringUtil;
 import com.sensetime.autotest.util.Wsutil;
+
 import org.java_websocket.handshake.ServerHandshake;
 import org.jboss.netty.util.internal.SystemPropertyUtil;
 
@@ -35,6 +37,8 @@ public class WebSocketService extends Service {
 
     private static final long CLOSE_RECON_TIME = 3000;
 
+    public boolean isRunning = false;
+
 //    private Context mContext = getBaseContext();
 
     private URI uri;
@@ -44,7 +48,7 @@ public class WebSocketService extends Service {
     private JWebSocketClientBinder mBinder = new JWebSocketClientBinder();
 
     //设置intent用来向MainActivity传递消息修改UI
-    private Intent intent= new Intent("com.caisang");
+    private Intent intent = new Intent("com.caisang");
 
     //用于Activity和service通讯
     public class JWebSocketClientBinder extends Binder {
@@ -52,6 +56,7 @@ public class WebSocketService extends Service {
             return WebSocketService.this;
         }
     }
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -87,13 +92,12 @@ public class WebSocketService extends Service {
 //        initSocketClient();
 //        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
 
-        if (client!=null&&client.isOpen()){
+        if (client != null && client.isOpen()) {
             String message = intent.getStringExtra("message");
             System.out.println("收到消息");
             System.out.println(message);
             sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
         }
-
 
 
 //
@@ -109,6 +113,7 @@ public class WebSocketService extends Service {
             stopSelf();
             return super.onStartCommand(intent, flags, startId);
         }
+
         @Override
         public IBinder onBind(Intent intent) {
             return null;
@@ -121,25 +126,26 @@ public class WebSocketService extends Service {
         LogUtils.w("ws被销毁");
         super.onDestroy();
     }
+
     private void initSocketClient() {
-        URI uri = URI.create(Wsutil.ws+Wsutil.devicesID);
+        URI uri = URI.create(Wsutil.ws + Wsutil.devicesID);
         client = new WebSocketServer(uri) {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
-                DeviceMessage deviceMessage = JSON.parseObject(message,DeviceMessage.class);
-                switch (deviceMessage.getCode()){
+                DeviceMessage deviceMessage = JSON.parseObject(message, DeviceMessage.class);
+                switch (deviceMessage.getCode()) {
                     case 0:
-                        DeviceMessage<Map<String,Object>> resMsg = new DeviceMessage<>();
-                        Map<String,Object> respMap = new HashMap<>(1);
-                        if (MonitoringUtil.isServiceWorked(getBaseContext(),"com.sensetime.autotest.service.EnableTaskService")){
+                        DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
+                        Map<String, Object> respMap = new HashMap<>(1);
+                        if ( isRunning || MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService")) {
                             resMsg.setCode(0);
-                            respMap.put("status",1);
+                            respMap.put("status", 1);
                             resMsg.setData(respMap);
                             sendMsg(JSON.toJSONString(resMsg));
-                        }else {
+                        } else {
                             resMsg.setCode(0);
-                            respMap.put("status",0);
+                            respMap.put("status", 0);
                             resMsg.setData(respMap);
                             sendMsg(JSON.toJSONString(resMsg));
                         }
@@ -150,8 +156,19 @@ public class WebSocketService extends Service {
                         JSONObject jsonObject = JSONObject.parseObject(message);
                         JSONObject json1 = JSONObject.parseObject(jsonObject.getString("data"));
                         System.out.println(json1.get("cmd"));
-                        intent.putExtra("task",json1.toJSONString());
+                        intent.putExtra("task", json1.toJSONString());
                         sendBroadcast(intent);
+                        break;
+
+                    case 2:
+                        LogUtils.i("收到占用信号消息，开始占用机器");
+                        isRunning=true;
+                        DeviceMessage<Map<String, Object>> resMsg1 = new DeviceMessage<>();
+                        Map<String, Object> respMap1 = new HashMap<>(1);
+                        resMsg1.setCode(0);
+                        respMap1.put("status", 1);
+                        resMsg1.setData(respMap1);
+                        sendMsg(JSON.toJSONString(resMsg1));
                 }
 
 //                Intent intentTask = new Intent("com.sensetime.autotest");
@@ -211,7 +228,7 @@ public class WebSocketService extends Service {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if (null != client&&client.isOpen()) {
+                if (null != client && client.isOpen()) {
                     client.send(msg);
                 }
             }
@@ -283,6 +300,4 @@ public class WebSocketService extends Service {
 //    }
 
 
-
-
-    }
+}
