@@ -14,20 +14,27 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
+import lombok.SneakyThrows;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.BufferedSink;
 import okio.Okio;
 import okio.Sink;
 
 public class HttpUtil {
+
+    private static final java.util.UUID UUID = new UUID(121,12);
 
     public static void get(String getUrl) {
         HttpURLConnection connection = null;
@@ -148,7 +155,7 @@ public class HttpUtil {
 
     public static void downloadFile(Context mContext, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
-        final String url = "http://10.151.3.26:6868/" + file;
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
 
@@ -217,7 +224,7 @@ public class HttpUtil {
 
     public static void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
-        final String url = "http://10.151.4.123:6868/" + file;
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
 
@@ -300,7 +307,7 @@ public class HttpUtil {
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
-        final String url = "http://10.151.5.190:6868" + sourcePath;
+        final String url = "http://savvcenter.sensetime.com/resource/" + sourcePath;
         Request request = new Request.Builder().url(url).build();
         new OkHttpClient().newCall(request).enqueue(new Callback() {
             @Override
@@ -365,7 +372,7 @@ public class HttpUtil {
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
-        final String url = "http://10.151.5.190:6868" + sourcePath;
+        final String url = "http://savvcenter.sensetime.com/resource/" + sourcePath;
         Request request = new Request.Builder().url(url).build();
         new OkHttpClient().newCall(request).enqueue(new Callback() {
             @Override
@@ -420,7 +427,7 @@ public class HttpUtil {
 
     public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
-        final String url = "http://10.151.5.191:6868/" + file;
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
 
@@ -478,5 +485,32 @@ public class HttpUtil {
         });
     }
 
+    public static void fileUpload(Long id,String path) {
+        // 获得输入框中的路径
+        File file = new File(path);
+        OkHttpClient client = new OkHttpClient();
+        // 上传文件使用MultipartBody.Builder
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("id", String.valueOf(id)) // 提交普通字段
+                .addFormDataPart("file", file.getName(), RequestBody.create(MediaType.parse("multipart/form-data"), file)) // 提交图片，第一个参数是键（name="第一个参数"），第二个参数是文件名，第三个是一个RequestBody
+                .build();
+        // POST请求
+        Request request = new Request.Builder()
+                .url("http://savvcenter.sensetime.com:9111/MobileCenter/upload")
+                .post(requestBody)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                LogUtils.w("文件上传出现问题");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                LogUtils.i("log文件上传失败");
+            }
+        });
+    }
 }
 

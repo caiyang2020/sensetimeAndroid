@@ -148,7 +148,7 @@ public class EnableTaskService extends IntentService {
         final Semaphore taskSemaphore = new Semaphore(0);
 
         //创建以任务名称创建log保存文件夹
-        File dir = new File(context.getFilesDir() + "/Log/" + task.getTaskName());
+        File dir = new File(context.getFilesDir() + "/Log/" + task.getId());
         if (!dir.exists()) {
             dir.mkdir();
         }
@@ -212,12 +212,13 @@ public class EnableTaskService extends IntentService {
                 Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0)[0]);
                 //拼接字符命令
                 String cmd = MessageFormat.format(task.getCmd(), context.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^"), 30,
-                        context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                        context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 PowerShell.cmd(context, "cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
                         "pwd",
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
-                NfsServer.uploadFile(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"), task.getTaskName());
+//                NfsServer.uploadFile(context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"), task.getId().toString());
+                HttpUtil.fileUpload(task.getId(),context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                 readyVideo.remove(0);

@@ -162,9 +162,9 @@ public class NfsServer extends Service {
             File localFile = new File(localDir);
             //获取本地文件的文件名，此名字用于在远程的Nfs服务器上指定目录创建同名文件
             String localFileName = localFile.getName();
-            Nfs3 nfs3 = new Nfs3("10.151.5.190", "/data", new CredentialUnix(0, 0, null), 3);
+            Nfs3 nfs3 = new Nfs3("10.151.3.26", "/test_better", new CredentialUnix(0, 0, null), 3);
             //创建远程服务器上Nfs文件对象
-            Nfs3File NfsFile = new Nfs3File(nfs3, "/test_platform/task_log/" + taskName + "/" + localFileName);
+            Nfs3File NfsFile = new Nfs3File(nfs3, "/task_log/" + taskName + "/" + localFileName);
             //打开一个文件输入流
             inputStream = new BufferedInputStream(new FileInputStream(localFile));
             //打开一个远程Nfs文件输出流，将文件复制到的目的地
