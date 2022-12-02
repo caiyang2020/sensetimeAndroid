@@ -4,7 +4,7 @@ public class Wsutil {
 
     public static volatile String devicesID = "";
 
-    public static String ws = "ws://10.151.3.26:10000/ws?type=AndroidPhone&sid=";
+    public static String ws = "ws://savvcenter.sensetime.com:10000/ws?type=AndroidPhone&sid=";
 
 
 }

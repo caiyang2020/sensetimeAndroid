@@ -98,9 +98,6 @@ public class WebSocketService extends Service {
             System.out.println(message);
             sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
         }
-
-
-//
         return START_STICKY;
     }
 
@@ -138,6 +135,8 @@ public class WebSocketService extends Service {
                     case 0:
                         DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
                         Map<String, Object> respMap = new HashMap<>(1);
+                        LogUtils.i("isRunning："+isRunning);
+                        LogUtils.i("com.sensetime.autotest.service.EnableTaskService："+MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService"));
                         if ( isRunning || MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService")) {
                             resMsg.setCode(0);
                             respMap.put("status", 1);

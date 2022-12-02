@@ -34,8 +34,6 @@ import okio.Sink;
 
 public class HttpUtil {
 
-    private static final java.util.UUID UUID = new UUID(121,12);
-
     public static void get(String getUrl) {
         HttpURLConnection connection = null;
         try {
@@ -508,7 +506,7 @@ public class HttpUtil {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                LogUtils.i("log文件上传失败");
+                LogUtils.i("log文件上传成功");
             }
         });
     }
