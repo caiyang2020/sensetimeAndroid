@@ -173,9 +173,9 @@ public class EnableTaskService extends IntentService {
                         String path = gt[0];
                         HttpUtil.downloadFile(mContext, semaphore, path, "video");
                         try {
-                            System.out.println("请求下载文件");
+                            System.out.println("请求下载视频文件");
                             semaphore.acquire();
-                            System.out.println("请求下载文件完成");
+                            System.out.println("下载视频文件完成");
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
