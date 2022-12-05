@@ -40,7 +40,7 @@ public class MyAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        convertView = LayoutInflater.from(mContext).inflate(R.layout.log_text_item,parent,false);
+        convertView = LayoutInflater.from(mContext).inflate(R.layout.log_text_item, parent, false);
         TextView textView = convertView.findViewById(R.id.textView7);
         textView.setText(mLogLinklist.get(position));
 

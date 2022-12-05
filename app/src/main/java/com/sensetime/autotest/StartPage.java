@@ -4,9 +4,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -33,11 +35,11 @@ public class StartPage extends AppCompatActivity {
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                Intent intent = new Intent(StartPage.this,MainActivity.class);
+                Intent intent = new Intent(StartPage.this, MainActivity.class);
                 startActivity(intent);
                 finish();
             }
-        },3000);
+        }, 3000);
 
     }
 }

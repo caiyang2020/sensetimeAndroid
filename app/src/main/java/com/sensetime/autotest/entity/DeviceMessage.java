@@ -2,6 +2,8 @@ package com.sensetime.autotest.entity;
 
 import java.io.Serializable;
 
+import lombok.Data;
+
 public class DeviceMessage<T> implements Serializable {
 
     private int code;
@@ -25,4 +27,11 @@ public class DeviceMessage<T> implements Serializable {
         this.code = code;
     }
 
+    @Override
+    public String toString() {
+        return "DeviceMessage{" +
+                "code=" + code +
+                ", data='" + data + '\'' +
+                '}';
+    }
 }

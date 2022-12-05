@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
@@ -14,20 +13,33 @@ import android.util.Log;
 import androidx.annotation.RequiresApi;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.apkfuns.logutils.LogUtils;
+import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
+import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.util.MonitoringUtil;
 import com.sensetime.autotest.util.Wsutil;
+
 import org.java_websocket.handshake.ServerHandshake;
+import org.jboss.netty.util.internal.SystemPropertyUtil;
+
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class WebSocketService extends Service {
 
     private final static int GRAY_SERVICE_ID = 1001;
 
-    private static final long CLOSE_RECON_TIME = 100;
+    private static final long CLOSE_RECON_TIME = 3000;
 
-    private Context mContext;
+    public boolean isRunning = false;
+
+//    private Context mContext = getBaseContext();
 
     private URI uri;
 
@@ -36,7 +48,7 @@ public class WebSocketService extends Service {
     private JWebSocketClientBinder mBinder = new JWebSocketClientBinder();
 
     //设置intent用来向MainActivity传递消息修改UI
-    private Intent intent= new Intent("com.caisang");
+    private Intent intent = new Intent("com.caisang");
 
     //用于Activity和service通讯
     public class JWebSocketClientBinder extends Binder {
@@ -44,6 +56,7 @@ public class WebSocketService extends Service {
             return WebSocketService.this;
         }
     }
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -52,11 +65,6 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        //初始化websocket
         initSocketClient();
         mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
 
@@ -75,6 +83,21 @@ public class WebSocketService extends Service {
 //        }
 
 //        acquireWakeLock();
+//        return START_STICKY;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+//        //初始化websocket
+//        initSocketClient();
+//        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
+
+        if (client != null && client.isOpen()) {
+            String message = intent.getStringExtra("message");
+            System.out.println("收到消息");
+            System.out.println(message);
+            sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
+        }
         return START_STICKY;
     }
 
@@ -87,6 +110,7 @@ public class WebSocketService extends Service {
             stopSelf();
             return super.onStartCommand(intent, flags, startId);
         }
+
         @Override
         public IBinder onBind(Intent intent) {
             return null;
@@ -96,21 +120,61 @@ public class WebSocketService extends Service {
     @Override
     public void onDestroy() {
         closeConnect();
+        LogUtils.w("ws被销毁");
         super.onDestroy();
     }
+
     private void initSocketClient() {
-        URI uri = URI.create(Wsutil.ws+Wsutil.devicesID);
+        URI uri = URI.create(Wsutil.ws + Wsutil.devicesID);
         client = new WebSocketServer(uri) {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onMessage(String message) {
+                DeviceMessage deviceMessage = JSON.parseObject(message, DeviceMessage.class);
+                switch (deviceMessage.getCode()) {
+                    case 0:
+                        DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
+                        Map<String, Object> respMap = new HashMap<>(1);
+                        LogUtils.i("isRunning："+isRunning);
+                        LogUtils.i("com.sensetime.autotest.service.EnableTaskService："+MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService"));
+                        if ( isRunning || MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService")) {
+                            resMsg.setCode(0);
+                            respMap.put("status", 1);
+                            resMsg.setData(respMap);
+                            sendMsg(JSON.toJSONString(resMsg));
+                        } else {
+                            resMsg.setCode(0);
+                            respMap.put("status", 0);
+                            resMsg.setData(respMap);
+                            sendMsg(JSON.toJSONString(resMsg));
+                        }
+                        break;
+                    case 1:
+                        LogUtils.i("收到服务端发送的任务，开始运行任务");
+//                        Task taskInfo = JSON.parseObject(deviceMessage.getData(),Task.class);
+                        JSONObject jsonObject = JSONObject.parseObject(message);
+                        JSONObject json1 = JSONObject.parseObject(jsonObject.getString("data"));
+                        System.out.println(json1.get("cmd"));
+                        intent.putExtra("task", json1.toJSONString());
+                        sendBroadcast(intent);
+                        break;
+
+                    case 2:
+                        LogUtils.i("收到占用信号消息，开始占用机器");
+                        isRunning=true;
+                        DeviceMessage<Map<String, Object>> resMsg1 = new DeviceMessage<>();
+                        Map<String, Object> respMap1 = new HashMap<>(1);
+                        resMsg1.setCode(0);
+                        respMap1.put("status", 1);
+                        resMsg1.setData(respMap1);
+                        sendMsg(JSON.toJSONString(resMsg1));
+                }
+
 //                Intent intentTask = new Intent("com.sensetime.autotest");
 //                Bundle bundle = new Bundle();
 //                bundle.putString("task",message);
 //                intentTask.putExtras(bundle);
 //                startService(intentTask);
-                intent.putExtra("task",message);
-                sendBroadcast(intent);
 //                System.out.println(message);
 //                System.out.println("收到一次消息");
 //                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
@@ -163,7 +227,7 @@ public class WebSocketService extends Service {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if (null != client) {
+                if (null != client && client.isOpen()) {
                     client.send(msg);
                 }
             }
@@ -184,8 +248,8 @@ public class WebSocketService extends Service {
 
 
     private static final long HEART_BEAT_RATE = 10 * 1000;//每隔10秒进行一次对长连接的心跳检测
-    private Handler mHandler = new Handler();
-    private Runnable heartBeatRunnable = new Runnable() {
+    private final Handler mHandler = new Handler();
+    private final Runnable heartBeatRunnable = new Runnable() {
         @Override
         public void run() {
 //            client.send("心跳包");
@@ -196,7 +260,6 @@ public class WebSocketService extends Service {
                 }
             } else {
                 //如果client已为空，重新初始化连接
-                client = null;
                 initSocketClient();
             }
             //每隔一定的时间，对长连接进行一次心跳检测
@@ -210,7 +273,7 @@ public class WebSocketService extends Service {
             @Override
             public void run() {
                 try {
-//                    client.send("000000000");
+                    Thread.sleep(1000);
                     Log.e("JWebSocketClientService", "开启重连");
                     client.reconnectBlocking();
                 } catch (InterruptedException e) {
@@ -219,8 +282,6 @@ public class WebSocketService extends Service {
             }
         }.start();
     }
-
-
 
 //    //获取电源锁，保持该服务在屏幕熄灭时仍然获取CPU时，保持运行
 //    @SuppressLint("InvalidWakeLockTag")
@@ -238,6 +299,4 @@ public class WebSocketService extends Service {
 //    }
 
 
-
-
-    }
+}

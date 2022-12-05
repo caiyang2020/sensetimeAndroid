@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="Encoding">
-    <file url="file://$USER_HOME$/AppData/Local/Google/AndroidStudio2020.3/device-explorer/oneplus-kb2000-a9005d25/data/data/com.sensetime.autotest/files/Gt/gt_GDC_D03_OMS_GES_0118.csv" charset="GBK" />
+  <component name="Encoding" addBOMForNewFiles="with BOM">
+    <file url="file://$PROJECT_DIR$/app/src/main/java/com/sensetime/autotest/util/MonitoringUtil.java" charset="UTF-8" />
+    <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>

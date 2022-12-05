@@ -28,18 +28,18 @@ import java.io.OutputStream;
 
 public class NfsServer extends Service {
 
-    public static void getFile(Context context, String path,String type){
+    public static void getFile(Context context, String path, String type) {
 
         String allPath = path;
 
-        path=path.replaceFirst("/data","");
+        path = path.replaceFirst("/data", "");
         String NFS_IP = "";
-        if (path.contains("TestData")){
-            NFS_IP="10.151.3.26";
-        }else if(path.contains("Testdata")) {
-            NFS_IP="10.151.4.123";
-        }else {
-            NFS_IP="10.151.4.123";
+        if (path.contains("TestData")) {
+            NFS_IP = "10.151.3.26";
+        } else if (path.contains("Testdata")) {
+            NFS_IP = "10.151.4.123";
+        } else {
+            NFS_IP = "10.151.4.123";
         }
         String NfsFileDir = path;
         String localDir = "/";
@@ -47,21 +47,21 @@ public class NfsServer extends Service {
         OutputStream outputStream = null;
         try {
             Nfs3 nfs3 = new Nfs3(NFS_IP, "/data", new CredentialUnix(0, 0, null), 3);
-            LogUtils.i("正在下载文件:"+NfsFileDir);
+            LogUtils.i("正在下载文件:" + NfsFileDir);
             Nfs3File nfsFile = new Nfs3File(nfs3, NfsFileDir);
             String localFileName = localDir + nfsFile.getName();
             //创建一个本地文件对象
             File localFile;
-            switch (type){
-                
+            switch (type) {
+
                 case "sdk":
-                    localFile = new File(context.getFilesDir()+"/Sdk", nfsFile.getName());
+                    localFile = new File(context.getFilesDir() + "/Sdk", nfsFile.getName());
                     break;
                 case "gt":
-                    localFile = new File(context.getFilesDir()+"/Gt", nfsFile.getName());
+                    localFile = new File(context.getFilesDir() + "/Gt", nfsFile.getName());
                     break;
                 case "video":
-                    localFile = new File(context.getFilesDir()+"/Video",allPath.replaceAll("/","^"));
+                    localFile = new File(context.getFilesDir() + "/Video", allPath.replaceAll("/", "^"));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
@@ -75,23 +75,23 @@ public class NfsServer extends Service {
                 //缓冲内存
                 byte[] buffer = new byte[4096];
                 int lenth = 0;
-                while ((lenth=inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer,0,lenth);
+                while ((lenth = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, lenth);
                 }
                 outputStream.close();
                 inputStream.close();
-                Log.i("info","文件下载完成！");
+                Log.i("info", "文件下载完成！");
                 if (type.equalsIgnoreCase("sdk")) {
                     PowerShell.cmd("cd " + context.getFilesDir() + "/Sdk",
 //                            "mkdir "+nfsFile.getName().replace(".tar",""),
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
-                            "tar -xvf " + nfsFile.getName()+" -C /data/local/tmp/AutoTest/",
-                            "chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar",""));
-                    String[] cmds = {"sh","-c","su;cd " +context.getFilesDir() + "/Sdk;tar -xvf " + nfsFile.getName() + "\\ -C /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+nfsFile.getName().replace(".tar","")};
+                            "tar -xvf " + nfsFile.getName() + " -C /data/local/tmp/AutoTest/",
+                            "chmod -R 777 /data/local/tmp/AutoTest/" + nfsFile.getName().replace(".tar", ""));
+                    String[] cmds = {"sh", "-c", "su;cd " + context.getFilesDir() + "/Sdk;tar -xvf " + nfsFile.getName() + "\\ -C /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/" + nfsFile.getName().replace(".tar", "")};
 //                    System.out.println(cmds);
                 }
-            }else {
-                Log.i("info","文件已存在,不进入下载");
+            } else {
+                Log.i("info", "文件已存在,不进入下载");
             }
 
         } catch (IOException ex) {
@@ -133,7 +133,7 @@ public class NfsServer extends Service {
             byte[] buffer = new byte[1024];
             int lenth = 0;
             while ((lenth = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer,0,lenth);
+                outputStream.write(buffer, 0, lenth);
             }
             System.out.println("文件上传完成！");
         } catch (Exception ex) {
@@ -152,7 +152,7 @@ public class NfsServer extends Service {
         }
     }
 
-    public static void uploadFile(String dirName,String taskName) {
+    public static void uploadFile(String dirName, String taskName) {
         String localDir = dirName;
         InputStream inputStream = null;
         OutputStream outputStream = null;
@@ -162,9 +162,9 @@ public class NfsServer extends Service {
             File localFile = new File(localDir);
             //获取本地文件的文件名，此名字用于在远程的Nfs服务器上指定目录创建同名文件
             String localFileName = localFile.getName();
-            Nfs3 nfs3 = new Nfs3("10.151.4.123", "/data", new CredentialUnix(0, 0, null), 3);
+            Nfs3 nfs3 = new Nfs3("10.151.3.26", "/test_better", new CredentialUnix(0, 0, null), 3);
             //创建远程服务器上Nfs文件对象
-            Nfs3File NfsFile = new Nfs3File(nfs3, "/test_platform/task_log/" + taskName+"/Log/"+taskName+"/"+localFileName);
+            Nfs3File NfsFile = new Nfs3File(nfs3, "/task_log/" + taskName + "/" + localFileName);
             //打开一个文件输入流
             inputStream = new BufferedInputStream(new FileInputStream(localFile));
             //打开一个远程Nfs文件输出流，将文件复制到的目的地
@@ -174,7 +174,7 @@ public class NfsServer extends Service {
             byte[] buffer = new byte[1024];
             int lenth = 0;
             while ((lenth = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer,0,lenth);
+                outputStream.write(buffer, 0, lenth);
             }
 //            System.out.println("文件上传完成！");
         } catch (Exception ex) {

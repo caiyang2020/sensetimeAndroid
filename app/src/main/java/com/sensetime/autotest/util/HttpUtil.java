@@ -1,10 +1,10 @@
 package com.sensetime.autotest.util;
 
 import android.content.Context;
-import android.os.Environment;
-import android.os.strictmode.ServiceConnectionLeakedViolation;
-import android.util.Log;
+
 import com.alibaba.fastjson.JSON;
+import com.apkfuns.logutils.LogUtils;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -14,13 +14,19 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
+import lombok.SneakyThrows;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.BufferedSink;
 import okio.Okio;
@@ -28,7 +34,7 @@ import okio.Sink;
 
 public class HttpUtil {
 
-    public static void get(String getUrl){
+    public static void get(String getUrl) {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(getUrl);
@@ -50,7 +56,7 @@ public class HttpUtil {
         }
     }
 
-    public static void post(String postUrl,Object obj){
+    public static void post(String postUrl, Object obj) {
 
         try {
             // 1. 获取访问地址URL
@@ -110,7 +116,7 @@ public class HttpUtil {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if(response.isSuccessful()){
+                if (response.isSuccessful()) {
                     String result = response.body().string();
                     //处理UI需要切换到UI线程处理
                 }
@@ -118,10 +124,10 @@ public class HttpUtil {
         });
     }
 
-    public void post(String url,String key,String value){
+    public void post(String url, String key, String value) {
         OkHttpClient client = new OkHttpClient();
         FormBody body = new FormBody.Builder()
-                .add(key,value)
+                .add(key, value)
                 .build();
         Request request = new Request.Builder()
                 .url(url)
@@ -136,7 +142,7 @@ public class HttpUtil {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if(response.isSuccessful()){
+                if (response.isSuccessful()) {
                     String result = response.body().string();
                     //处理UI需要切换到UI线程处理
                 }
@@ -145,9 +151,9 @@ public class HttpUtil {
     }
 
 
-    public static void downloadFile(Context mContext, String file,String type){
+    public static void downloadFile(Context mContext, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
-        final String url = "http://10.151.3.26:6868/"+file;
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
 
@@ -159,22 +165,23 @@ public class HttpUtil {
                 e.printStackTrace();
 //                Log.i("DOWNLOAD","download failed");
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
 
                 File localFile;
-                switch (type){
+                switch (type) {
 
                     case "sdk":
-                        localFile = new File(mContext.getFilesDir()+"/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
                         break;
                     case "gt":
-                        localFile = new File(mContext.getFilesDir()+"/Gt",url.substring(url.lastIndexOf("/") + 1));
+                        localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
                         break;
                     case "video":
-                        localFile = new File(mContext.getFilesDir()+"/Video",file.replaceAll("/","^"));
+                        localFile = new File(mContext.getFilesDir() + "/Video", file.replaceAll("/", "^"));
                         break;
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
@@ -204,7 +211,7 @@ public class HttpUtil {
                     e.printStackTrace();
 //                    Log.i("DOWNLOAD","download failed");
                 } finally {
-                    if(bufferedSink != null){
+                    if (bufferedSink != null) {
                         bufferedSink.close();
                     }
 
@@ -213,9 +220,9 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type){
+    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
-        final String url = "http://10.151.4.123:6868/"+file;
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
 
@@ -227,22 +234,23 @@ public class HttpUtil {
                 e.printStackTrace();
 //                Log.i("DOWNLOAD","download failed");
             }
+
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
 
                 File localFile;
-                switch (type){
+                switch (type) {
 
                     case "sdk":
-                        localFile = new File(mContext.getFilesDir()+"/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
                         break;
                     case "gt":
-                        localFile = new File(mContext.getFilesDir()+"/Gt",url.substring(url.lastIndexOf("/") + 1));
+                        localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
                         break;
                     case "video":
-                        localFile = new File(mContext.getFilesDir()+"/Video",file.replaceAll("/","^"));
+                        localFile = new File(mContext.getFilesDir() + "/Video", file.replaceAll("/", "^"));
                         break;
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
@@ -264,7 +272,7 @@ public class HttpUtil {
 //                            "mkdir "+nfsFile.getName().replace(".tar",""),
 //                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
                                 "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
-                                "chmod -R 777 /data/local/tmp/AutoTest/"+ url.substring(url.lastIndexOf("/") + 1).replace(".tar",""));
+                                "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar", ""));
 //                        String[] cmds = {"sh","-c","su;cd " +mContext.getFilesDir() + "/Sdk;tar -zxvf " + url.substring(url.lastIndexOf("/") + 1)  + " /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+url.substring(url.lastIndexOf("/") + 1) .replace(".tgz","")};
 //                        System.out.println(cmds);
 //                        Process pro = Runtime.getRuntime().exec(cmds);
@@ -275,11 +283,230 @@ public class HttpUtil {
                     e.printStackTrace();
 //                    Log.i("DOWNLOAD","download failed");
                 } finally {
-                    if(bufferedSink != null){
+                    if (bufferedSink != null) {
                         bufferedSink.close();
                     }
                     countDownLatch.countDown();
                 }
+            }
+        });
+    }
+
+    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type) {
+        //下载路径，如果路径无效了，可换成你的下载路径
+        String sourcePath;
+        switch (type) {
+            case "sdk":
+                sourcePath = "/data/TestBetterWorkSpace/sdk/" + fileId + ".tar.gz";
+                break;
+            case "gt":
+                sourcePath = "/data/TestBetterWorkSpace/gt/" + fileId + ".csv";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+        final String url = "http://savvcenter.sensetime.com/resource/" + sourcePath;
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+                LogUtils.i("DOWNLOAD", "download failed");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type) {
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+                String filename = url.substring(url.lastIndexOf("/") + 1);
+                try {
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+                    if (type.equalsIgnoreCase("sdk")) {
+                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+                                "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar.gz", ""));
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (bufferedSink != null) {
+                        bufferedSink.close();
+                    }
+                    countDownLatch.countDown();
+                }
+            }
+        });
+    }
+
+    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type, String filename) {
+        //下载路径，如果路径无效了，可换成你的下载路径
+        String sourcePath;
+        switch (type) {
+            case "sdk":
+                sourcePath = "/data/TestBetterWorkSpace/sdk/" + fileId + ".tar.gz";
+                break;
+            case "gt":
+                sourcePath = "/data/TestBetterWorkSpace/gt/" + fileId + ".csv";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + type);
+        }
+        final String url = "http://savvcenter.sensetime.com/resource/" + sourcePath;
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+                LogUtils.i("DOWNLOAD", "download failed");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type) {
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+//                String filename = url.substring(url.lastIndexOf("/") + 1);
+                try {
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+                    if (type.equalsIgnoreCase("sdk")) {
+                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+                                "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/" + filename);
+                        System.out.println("chmod -R 777 /data/local/tmp/AutoTest/" + filename);
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (bufferedSink != null) {
+                        bufferedSink.close();
+                    }
+                    countDownLatch.countDown();
+                }
+            }
+        });
+    }
+
+    public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type) {
+        //下载路径，如果路径无效了，可换成你的下载路径
+        final String url = "http://savvcenter.sensetime.com/resource/" + file;
+//        final long startTime = System.currentTimeMillis();
+//        Log.i("DOWNLOAD","startTime="+startTime);
+
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+//                Log.i("DOWNLOAD","download failed");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+
+                File localFile;
+                switch (type) {
+
+                    case "sdk":
+                        localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "gt":
+                        localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
+                        break;
+                    case "video":
+                        localFile = new File(mContext.getFilesDir() + "/Video", file.replaceAll("/", "^"));
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + type);
+                }
+                String filename = url.substring(url.lastIndexOf("/") + 1);
+                try {
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+                    if (type.equalsIgnoreCase("sdk")) {
+                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+                                "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar", ""));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (bufferedSink != null) {
+                        bufferedSink.close();
+                    }
+                    semaphore.release();
+                }
+            }
+        });
+    }
+
+    public static void fileUpload(Long id,String path) {
+        // 获得输入框中的路径
+        File file = new File(path);
+        OkHttpClient client = new OkHttpClient();
+        // 上传文件使用MultipartBody.Builder
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("id", String.valueOf(id)) // 提交普通字段
+                .addFormDataPart("file", file.getName(), RequestBody.create(MediaType.parse("multipart/form-data"), file)) // 提交图片，第一个参数是键（name="第一个参数"），第二个参数是文件名，第三个是一个RequestBody
+                .build();
+        // POST请求
+        Request request = new Request.Builder()
+                .url("http://savvcenter.sensetime.com:9111/MobileCenter/upload")
+                .post(requestBody)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                LogUtils.w("文件上传出现问题");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                LogUtils.i("log文件上传成功");
             }
         });
     }

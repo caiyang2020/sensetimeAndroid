@@ -6,13 +6,13 @@ import java.util.List;
 
 public class ThreadManager {
 
-    final public static List<HashMap<String,Thread>> taskList = new ArrayList<HashMap<String,Thread>>();
+    final public static List<HashMap<String, Thread>> taskList = new ArrayList<HashMap<String, Thread>>();
 
-    public static int threadNum (){
+    public static int threadNum() {
         return taskList.size();
     }
 
-    public static boolean setTaskList (HashMap s){
+    public static boolean setTaskList(HashMap s) {
         return taskList.add(s);
     }
 }

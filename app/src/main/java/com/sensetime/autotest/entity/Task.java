@@ -1,43 +1,44 @@
 package com.sensetime.autotest.entity;
 
+import androidx.annotation.NonNull;
+
 import java.io.Serializable;
 
 
 import lombok.Data;
 
-@Data
 public class Task implements Serializable {
 
-    private int status;
+    Long id;
 
-    public int getStatus() {
-        return status;
+    Long sdkId;
+
+    String taskName;
+
+    Long gtId;
+
+    String sdkRootPath;
+
+    String sdkRunPath;
+
+    String runFunc;
+
+    String cmd;
+
+    public Long getId() {
+        return id;
     }
 
-    public void setStatus(int status) {
-        this.status = status;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    private int taskCode;
-
-    private int taskType;
-
-    private String taskName;
-
-    private String SdkPath;
-
-    private String func;
-
-    private String GtPath;
-
-    private String deviceID;
-
-    public String getDeviceID() {
-        return deviceID;
+    public Long getSdkId() {
+        return sdkId;
     }
 
-    public void setDeviceID(String deviceID) {
-        this.deviceID = deviceID;
+    public void setSdkId(Long sdkId) {
+        this.sdkId = sdkId;
     }
 
     public String getTaskName() {
@@ -48,43 +49,56 @@ public class Task implements Serializable {
         this.taskName = taskName;
     }
 
-    public String getSdkPath() {
-        return SdkPath;
+    public Long getGtId() {
+        return gtId;
     }
 
-    public void setSdkPath(String sdkPath) {
-        SdkPath = sdkPath;
+    public void setGtId(Long gtId) {
+        this.gtId = gtId;
     }
 
-    public String getFunc() {
-        return func;
+    public String getSdkRootPath() {
+        return sdkRootPath;
     }
 
-    public void setFunc(String func) {
-        this.func = func;
+    public void setSdkRootPath(String sdkRootPath) {
+        this.sdkRootPath = sdkRootPath;
     }
 
-    public String getGtPath() {
-        return GtPath;
+    public String getSdkRunPath() {
+        return sdkRunPath;
     }
 
-    public void setGtPath(String gtPath) {
-        GtPath = gtPath;
+    public void setSdkRunPath(String sdkRunPath) {
+        this.sdkRunPath = sdkRunPath;
     }
 
-    public int getTaskType() {
-        return taskType;
+    public String getRunFunc() {
+        return runFunc;
     }
 
-    public void setTaskType(int taskType) {
-        this.taskType = taskType;
+    public void setRunFunc(String runFunc) {
+        this.runFunc = runFunc;
     }
 
-    public int getTaskCode() {
-        return taskCode;
+    public String getCmd() {
+        return cmd;
     }
 
-    public void setTaskCode(int taskCode) {
-        this.taskCode = taskCode;
+    public void setCmd(String cmd) {
+        this.cmd = cmd;
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "sdkId=" + sdkId +
+                ", taskName='" + taskName + '\'' +
+                ", gtId=" + gtId +
+                ", sdkRootPath='" + sdkRootPath + '\'' +
+                ", sdkRunPath='" + sdkRunPath + '\'' +
+                ", runFunc='" + runFunc + '\'' +
+                ", cmd='" + cmd + '\'' +
+                '}';
     }
 }
