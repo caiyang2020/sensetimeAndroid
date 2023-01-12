@@ -37,7 +37,7 @@ public class WebSocketService extends Service {
 
     private static final long CLOSE_RECON_TIME = 3000;
 
-    public boolean isRunning = false;
+    public static boolean isRunning = false;
 
 //    private Context mContext = getBaseContext();
 

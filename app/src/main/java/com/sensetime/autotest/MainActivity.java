@@ -24,6 +24,7 @@ import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -104,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
         //启动服务
         startJWebSClientService();
         //绑定服务
-//        bindService();
-
+        bindService();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     }
 
@@ -206,9 +207,8 @@ public class MainActivity extends AppCompatActivity {
                 intentTask.putExtras(bundle);
 //                intentTask.putExtra("context", (Parcelable) context);
                 startService(intentTask);
-                System.out.println("任务启动");
+                LogUtils.i("任务启动");
             }
-
 
             int process = intent.getIntExtra("process", 1000);
 //            Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);

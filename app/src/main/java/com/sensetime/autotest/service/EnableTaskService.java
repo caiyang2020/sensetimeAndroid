@@ -195,8 +195,12 @@ public class EnableTaskService extends IntentService {
                     resMsg.setCode(1);
                     respMap.put("status", 6);
                     respMap.put("id", task.getId());
-                    sendServer();
+                    for (int i=0;i<3;i++) {
+                        sendServer();
+                        sleep(3000);
+                    }
                     LogUtils.i("finish");
+                    WebSocketService.isRunning=false;
                     break;
                 }
                 try {
@@ -283,7 +287,6 @@ public class EnableTaskService extends IntentService {
 
     @Override
     public void onDestroy() {
-        webSocketService.isRunning = false;
         LogUtils.i("运行完成准备解除websocket的使用");
         unbindService(coon);
         super.onDestroy();
