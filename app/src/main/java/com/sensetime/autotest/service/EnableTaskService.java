@@ -75,7 +75,7 @@ public class EnableTaskService extends IntentService {
     }
 
     public void init(Task task) {
-        CountDownLatch prepareTask = new CountDownLatch(2);
+        CountDownLatch prepareTask = new CountDownLatch(3);
         //sdk 准备
         LogUtils.i("Start SDK preparation");
         HttpUtil.downloadFile(mContext, prepareTask, task.getSdkId(), "sdk", task.getSdkRootPath());
@@ -85,6 +85,10 @@ public class EnableTaskService extends IntentService {
         LogUtils.i("Start GT preparation");
         HttpUtil.downloadFile(mContext, prepareTask, task.getGtId(), "gt");
         LogUtils.i("Gt preparation is complete");
+        //获取已经上传到测试平台的log
+        LogUtils.i("Start Log preparation");
+        HttpUtil.downloadFile(mContext, prepareTask, task.getId(), "log");
+        LogUtils.i("Log preparation is complete");
         try {
             prepareTask.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
@@ -166,9 +170,14 @@ public class EnableTaskService extends IntentService {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getTaskName() + "/" + gt[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    File Logfile = new File(context.getFilesDir() + "/Log/" + task.getId() + "/" + gt[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                     if (Logfile.exists()) {
                         num++;
+                        if ((num * 100 / total) > process) {
+                            process = num * 100 / total;
+                            intent.putExtra("process", process);
+                            context.sendBroadcast(intent);
+                        }
                     } else {
                         String path = gt[0];
                         HttpUtil.downloadFile(mContext, semaphore, path, "video");

@@ -302,6 +302,9 @@ public class HttpUtil {
             case "gt":
                 sourcePath = "/data/TestBetterWorkSpace/gt/" + fileId + ".csv";
                 break;
+            case "log":
+                sourcePath = "/data/TestBetterWorkSpace/tasklog/" + "TaskLog" + fileId + ".tar.gz";
+                break;
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
         }
@@ -329,6 +332,9 @@ public class HttpUtil {
                     case "gt":
                         localFile = new File(mContext.getFilesDir() + "/Gt", url.substring(url.lastIndexOf("/") + 1));
                         break;
+                    case "log":
+                        localFile = new File(mContext.getFilesDir() + "/Log", url.substring(url.lastIndexOf("/") + 1));
+                        break;
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
@@ -339,12 +345,21 @@ public class HttpUtil {
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
                     Thread.sleep(1000);
-                    if (type.equalsIgnoreCase("sdk")) {
-                        PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
-                                "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
-                                "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar.gz", ""));
+                    switch (type) {
+                        case "sdk":
+                            PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
+                                    "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
+                                    "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar.gz", ""));
+                            break;
+                        case "log":
+                            //创建以任务名称创建log保存文件夹
+                            File dir = new File(mContext.getFilesDir() + "/Log/" + fileId);
+                            if (!dir.exists()) {
+                                dir.mkdir();
+                            }
+                            PowerShell.cmd("cd " + mContext.getFilesDir() + "/Log",
+                                    "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  " + mContext.getFilesDir() + File.separator + "Log" + File.separator + fileId);
                     }
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -483,7 +498,7 @@ public class HttpUtil {
         });
     }
 
-    public static void fileUpload(Long id,String path) {
+    public static void fileUpload(Long id, String path) {
         // 获得输入框中的路径
         File file = new File(path);
         OkHttpClient client = new OkHttpClient();

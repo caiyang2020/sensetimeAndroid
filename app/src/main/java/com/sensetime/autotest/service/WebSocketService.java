@@ -30,8 +30,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class WebSocketService extends Service {
+
+    private final static String TAG = "WebSocketClient";
 
     private final static int GRAY_SERVICE_ID = 1001;
 
@@ -94,8 +95,7 @@ public class WebSocketService extends Service {
 
         if (client != null && client.isOpen()) {
             String message = intent.getStringExtra("message");
-            System.out.println("收到消息");
-            System.out.println(message);
+            Log.i(TAG, "收到消息："+message);
             sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
         }
         return START_STICKY;
@@ -126,6 +126,7 @@ public class WebSocketService extends Service {
 
     private void initSocketClient() {
         URI uri = URI.create(Wsutil.ws + Wsutil.devicesID);
+        Log.i(TAG,"正在连接服务："+Wsutil.ws);
         client = new WebSocketServer(uri) {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
