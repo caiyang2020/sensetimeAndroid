@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -359,7 +360,9 @@ public class HttpUtil {
                             }
                             PowerShell.cmd("cd " + mContext.getFilesDir() + "/Log",
                                     "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  " + mContext.getFilesDir() + File.separator + "Log" + File.separator + fileId);
+                            break;
                     }
+                    response.close();
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -438,7 +441,7 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type) {
+    public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type) throws SocketTimeoutException {
         //下载路径，如果路径无效了，可换成你的下载路径
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
@@ -478,7 +481,6 @@ public class HttpUtil {
                     sink = Okio.sink(localFile);
                     bufferedSink = Okio.buffer(sink);
                     bufferedSink.writeAll(response.body().source());
-
                     bufferedSink.close();
                     Thread.sleep(1000);
                     if (type.equalsIgnoreCase("sdk")) {

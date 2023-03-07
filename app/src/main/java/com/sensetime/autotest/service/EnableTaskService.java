@@ -9,26 +9,21 @@ import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
-import com.sensetime.autotest.entity.TaskInfo;
-import com.sensetime.autotest.model.DateViewModel;
-import com.sensetime.autotest.server.NfsServer;
 import com.sensetime.autotest.util.FileUtil;
 import com.sensetime.autotest.util.HttpUtil;
-import com.sensetime.autotest.util.ThreadManager;
 import com.sensetime.autotest.util.PowerShell;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.sql.SQLOutput;
+import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -62,7 +57,6 @@ public class EnableTaskService extends IntentService {
     private DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
 
     private Map<String, Object> respMap = new HashMap<>(1);
-
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
@@ -180,13 +174,16 @@ public class EnableTaskService extends IntentService {
                         }
                     } else {
                         String path = gt[0];
-                        HttpUtil.downloadFile(mContext, semaphore, path, "video");
+
                         try {
+                            HttpUtil.downloadFile(mContext, semaphore, path, "video");
                             System.out.println("请求下载视频文件");
                             semaphore.acquire();
                             System.out.println("下载视频文件完成");
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                        } catch (SocketTimeoutException e) {
+                            semaphore.release();
                         }
                         readyVideo.add(gt);
                         taskSemaphore.release();
@@ -204,12 +201,12 @@ public class EnableTaskService extends IntentService {
                     resMsg.setCode(1);
                     respMap.put("status", 6);
                     respMap.put("id", task.getId());
-                    for (int i=0;i<3;i++) {
+                    for (int i = 0; i < 3; i++) {
                         sendServer();
                         sleep(3000);
                     }
                     LogUtils.i("finish");
-                    WebSocketService.isRunning=false;
+                    WebSocketService.isRunning = false;
                     break;
                 }
                 try {
@@ -231,7 +228,7 @@ public class EnableTaskService extends IntentService {
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
 //                NfsServer.uploadFile(context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"), task.getId().toString());
-                HttpUtil.fileUpload(task.getId(),context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                HttpUtil.fileUpload(task.getId(), context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                 readyVideo.remove(0);
@@ -298,6 +295,6 @@ public class EnableTaskService extends IntentService {
     public void onDestroy() {
         LogUtils.i("运行完成准备解除websocket的使用");
         unbindService(coon);
-        super.onDestroy();
+//        super.onDestroy();
     }
 }
