@@ -1,6 +1,10 @@
 package com.sensetime.autotest.util;
 
 import android.content.Context;
+import android.util.Log;
+
+
+import androidx.annotation.NonNull;
 
 import com.alibaba.fastjson.JSON;
 import com.apkfuns.logutils.LogUtils;
@@ -15,11 +19,11 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import lombok.SneakyThrows;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
@@ -446,18 +450,22 @@ public class HttpUtil {
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
 //        Log.i("DOWNLOAD","startTime="+startTime);
-
-        Request request = new Request.Builder().url(url).build();
-        new OkHttpClient().newCall(request).enqueue(new Callback() {
+        Request request = new Request.Builder()
+                .url(url).build();
+        OkHttpClient client = new OkHttpClient().newBuilder().connectTimeout(60, TimeUnit.SECONDS).build();
+        client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
-                // 下载失败
-                e.printStackTrace();
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                if(Objects.equals(e.getClass(), SocketTimeoutException.class)) {
+                    Log.i("DOWNLOAD","异常捕获");
+                    semaphore.release();
+                }
+                    // 下载失败
 //                Log.i("DOWNLOAD","download failed");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
 
@@ -482,6 +490,7 @@ public class HttpUtil {
                     bufferedSink = Okio.buffer(sink);
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
+                    response.body().close();
                     Thread.sleep(1000);
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
@@ -522,8 +531,10 @@ public class HttpUtil {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse( Call call,  Response response) throws IOException {
                 LogUtils.i("log文件上传成功");
+                assert response.body() != null;
+                response.body().close();
             }
         });
     }

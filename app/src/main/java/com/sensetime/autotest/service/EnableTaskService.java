@@ -84,12 +84,11 @@ public class EnableTaskService extends IntentService {
         HttpUtil.downloadFile(mContext, prepareTask, task.getId(), "log");
         LogUtils.i("Log preparation is complete");
         try {
-            prepareTask.await(1, TimeUnit.MINUTES);
+            prepareTask.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         if (FileUtil.checkSdk() && FileUtil.checkGt()) {
-
             LogUtils.i("SDK和GT准备完毕");
             resMsg.setCode(1);
             respMap.put("info", "SDK和GT准备完毕");
@@ -97,7 +96,6 @@ public class EnableTaskService extends IntentService {
             respMap.put("id", task.getId());
             respMap.put("taskName", task.getTaskName());
             sendServer();
-
             respMap.clear();
             //分析生成GT列表
             prepareGtList(mContext, task);
@@ -120,7 +118,6 @@ public class EnableTaskService extends IntentService {
     }
 
     public void prepareGtList(Context context, Task task) {
-
         InputStreamReader isr;
         String gtName;
         gtName = task.getGtId() + ".csv";
@@ -144,16 +141,13 @@ public class EnableTaskService extends IntentService {
     public void runTask(Context context, Task task) {
 
         final Semaphore taskSemaphore = new Semaphore(0);
-
         //创建以任务名称创建log保存文件夹
         File dir = new File(context.getFilesDir() + "/Log/" + task.getId());
         if (!dir.exists()) {
             dir.mkdir();
         }
-
         new Thread(new Runnable() {
             final Semaphore semaphore = new Semaphore(0);
-
             @Override
             public void run() {
                 for (String[] gt : gtList) {
@@ -277,7 +271,7 @@ public class EnableTaskService extends IntentService {
     ServiceConnection coon = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            webSocketService = ((WebSocketService.JWebSocketClientBinder) service).getService();
+            webSocketService = ((WebSocketService.WebSocketClientBinder) service).getService();
         }
 
         @Override

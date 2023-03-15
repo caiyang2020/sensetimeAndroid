@@ -38,6 +38,7 @@ import com.sensetime.autotest.adapyer.MyAdapter;
 import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.service.WebSocketService;
+import com.sensetime.autotest.util.Cmd;
 import com.sensetime.autotest.util.Wsutil;
 
 
@@ -51,14 +52,14 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Objects;
 
+import dagger.hilt.android.HiltAndroidApp;
 import lombok.SneakyThrows;
-
 
 public class MainActivity extends AppCompatActivity {
 
     private WebSocketService WebSClientService;
 
-    private WebSocketService.JWebSocketClientBinder binder;
+    private WebSocketService.WebSocketClientBinder binder;
 
     private WebSocketServer client;
 
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
         Wsutil.devicesID = androidID;
         LogUtils.e(androidID);
         //启动服务
-        startJWebSClientService();
+        startWebSClientService();
         //绑定服务
         bindService();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -168,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         bindService(bindIntent, serviceConnection, BIND_AUTO_CREATE);
     }
 
-    private void startJWebSClientService() {
+    private void startWebSClientService() {
         Intent intent = new Intent(mContext, WebSocketService.class);
         startService(intent);
     }
@@ -177,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             Log.e("MainActivity", "服务与活动成功绑定");
-            binder = (WebSocketService.JWebSocketClientBinder) iBinder;
+            binder = (WebSocketService.WebSocketClientBinder) iBinder;
             WebSClientService = binder.getService();
             client = WebSClientService.client;
         }
@@ -314,7 +315,6 @@ public class MainActivity extends AppCompatActivity {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void init() {
-
         new Thread(new Runnable() {
 
             File SdkDir = new File(getFilesDir() + "/Sdk");
@@ -322,10 +322,17 @@ public class MainActivity extends AppCompatActivity {
             File logDir = new File(getFilesDir() + "/Log");
             File videoDir = new File(getFilesDir() + "/Video");
             File auto = new File("/data/local/tmp/AutoTest");
-
             @Override
             public void run() {
+                //启动时先删除之前的log
+                SdkDir.delete();
+                gtDir.delete();
+                logDir.delete();
+                videoDir.delete();
+//                auto.delete();
+                Cmd.execute("rm "+auto);
                 try {
+
                     Process mkdirProcess = Runtime.getRuntime().exec("su");
                     DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
                     Log.i("info", "程序进入初始化");
@@ -346,7 +353,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (!videoDir.exists()) {
                         Log.i("info", "创建video文件夹");
-
 //                      dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
                         dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
                         dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
@@ -354,11 +360,6 @@ public class MainActivity extends AppCompatActivity {
                         dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
 //                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
 //                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
-                    }
-                    if (!auto.exists()) {
-                        Log.i("info", "创建auto文件夹");
-                        dataOutputStream.writeBytes("mkdir " + auto.toString() + "\n");
-                        dataOutputStream.writeBytes("chmod 777 " + auto.toString() + "\n");
                     }
                     dataOutputStream.flush();
                     dataOutputStream.close();

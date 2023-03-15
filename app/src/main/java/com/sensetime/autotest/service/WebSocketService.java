@@ -46,13 +46,13 @@ public class WebSocketService extends Service {
 
     public WebSocketServer client;
 
-    private JWebSocketClientBinder mBinder = new JWebSocketClientBinder();
+    private WebSocketClientBinder mBinder = new WebSocketClientBinder();
 
     //设置intent用来向MainActivity传递消息修改UI
     private Intent intent = new Intent("com.caisang");
 
     //用于Activity和service通讯
-    public class JWebSocketClientBinder extends Binder {
+    public class WebSocketClientBinder extends Binder {
         public WebSocketService getService() {
             return WebSocketService.this;
         }
@@ -275,7 +275,7 @@ public class WebSocketService extends Service {
             public void run() {
                 try {
                     Thread.sleep(1000);
-                    Log.e("JWebSocketClientService", "开启重连");
+                    Log.e("Websocket", "开启重连");
                     client.reconnectBlocking();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
