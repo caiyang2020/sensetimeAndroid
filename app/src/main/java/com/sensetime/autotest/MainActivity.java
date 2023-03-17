@@ -9,20 +9,16 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.StrictMode;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -36,15 +32,13 @@ import com.apkfuns.log2file.LogFileEngineFactory;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.adapyer.MyAdapter;
 import com.sensetime.autotest.database.MyDBOpenHelper;
-import com.sensetime.autotest.server.WebSocketServer;
+import com.sensetime.autotest.entity.AndroidSdkBase;
 import com.sensetime.autotest.service.WebSocketService;
-import com.sensetime.autotest.util.Cmd;
 import com.sensetime.autotest.util.Wsutil;
 
 
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -52,18 +46,22 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Objects;
 
-import dagger.hilt.android.HiltAndroidApp;
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+import dagger.hilt.android.qualifiers.ApplicationContext;
 import lombok.SneakyThrows;
 
+
+@AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
 
-    private WebSocketService WebSClientService;
+    public WebSocketService WebSClientService = WebSocketService.instance;
 
-    private WebSocketService.WebSocketClientBinder binder;
+    Context mContext;
 
-    private WebSocketServer client;
-
-    private Context mContext;
+    @Inject
+    AndroidSdkBase androidSdkBase;
 
     private AppBroadcast receiver;
 
@@ -88,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar pb;
     private TextView pbText;
 
-
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,18 +94,15 @@ public class MainActivity extends AppCompatActivity {
         mContext = getApplication();
         initLog();
         initUi();
-        addPermisson();
+        addPermission();
         openDataBase();
-        init();
+        androidSdkBase.init();
         String androidID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
         Wsutil.devicesID = androidID;
         LogUtils.e(androidID);
         //启动服务
         startWebSClientService();
-        //绑定服务
-        bindService();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
     }
 
     @SneakyThrows
@@ -152,49 +146,33 @@ public class MainActivity extends AppCompatActivity {
         LogUtils.i("Database preparation is complete");
     }
 
-    private void addPermisson() {
+    private void addPermission() {
         requestPermission();
-        upgradeRootPermission(getPackageCodePath());
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-        LogUtils.i("The system permission request is complete");
-        IntentFilter filter = new IntentFilter("com.caisang");
-        receiver = new AppBroadcast();
-        registerReceiver(receiver, filter);
-        LogUtils.i("Broadcast Listener registration is complete");
+        //升级root权限，这个是启动中最重要的一步
+        if (upgradeRootPermission(getPackageCodePath())){
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+            LogUtils.i("The system permission request is complete");
+            //获取广播
+            IntentFilter filter = new IntentFilter("com.caisang");
+            receiver = new AppBroadcast();
+            registerReceiver(receiver, filter);
+            LogUtils.i("Broadcast Listener registration is complete");
+        }
     }
 
-    private void bindService() {
-        Intent bindIntent = new Intent(mContext, WebSocketService.class);
-        bindService(bindIntent, serviceConnection, BIND_AUTO_CREATE);
-    }
-
+    //启动Websocket服务
     private void startWebSClientService() {
         Intent intent = new Intent(mContext, WebSocketService.class);
         startService(intent);
     }
 
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            Log.e("MainActivity", "服务与活动成功绑定");
-            binder = (WebSocketService.WebSocketClientBinder) iBinder;
-            WebSClientService = binder.getService();
-            client = WebSClientService.client;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            Log.e("MainActivity", "服务与活动成功断开");
-        }
-    };
-
     class AppBroadcast extends BroadcastReceiver {
 
         //消息接收模块
+        @SuppressLint("SetTextI18n")
         @Override
         public void onReceive(Context context, Intent intent) {
-
 
             String message = null;
             if ((message = intent.getStringExtra("task")) != null)
@@ -239,21 +217,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void requestPermission() {
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-
             Toast.makeText(this, "申请权限", Toast.LENGTH_SHORT).show();
-
             // 申请 相机 麦克风权限
             ActivityCompat.requestPermissions(this, new String[]{
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-
                     Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
         }
     }
 
-    public static boolean upgradeRootPermission(String pkgCodePath) {
+    public boolean upgradeRootPermission(String pkgCodePath) {
         Process process = null;
         DataOutputStream os = null;
         try {
@@ -281,6 +255,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void initUi() {
         ActionBar actionBar = getSupportActionBar();
+        assert actionBar != null;
         actionBar.hide();
         deviceId = findViewById(R.id.editTextTextPersonName1);
         taskName = findViewById(R.id.editTextTextPersonName2);
@@ -294,84 +269,70 @@ public class MainActivity extends AppCompatActivity {
         pbText = findViewById(R.id.textView8);
         deviceId.setText(Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID));
         image.setVisibility(View.VISIBLE);
-//        connect.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Wsutil.devicesID = deviceId.getText().toString();
-//                image.setVisibility(View.VISIBLE);
-////                System.out.println(deviceId.getText());
-//                //启动服务
-//                startJWebSClientService();
-//                //绑定服务
-//                bindService();
-//            }
-//        });
-
         ListView listView = findViewById(R.id.ListView);
         LinkedList<String> data = new LinkedList<>();
         MyAdapter myAdapter = new MyAdapter(mContext, data);
         listView.setAdapter(myAdapter);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public void init() {
-        new Thread(new Runnable() {
-
-            File SdkDir = new File(getFilesDir() + "/Sdk");
-            File gtDir = new File(getFilesDir() + "/Gt");
-            File logDir = new File(getFilesDir() + "/Log");
-            File videoDir = new File(getFilesDir() + "/Video");
-            File auto = new File("/data/local/tmp/AutoTest");
-            @Override
-            public void run() {
-                //启动时先删除之前的log
-                SdkDir.delete();
-                gtDir.delete();
-                logDir.delete();
-                videoDir.delete();
-//                auto.delete();
-                Cmd.execute("rm "+auto);
-                try {
-
-                    Process mkdirProcess = Runtime.getRuntime().exec("su");
-                    DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
-                    Log.i("info", "程序进入初始化");
-                    if (!SdkDir.exists()) {
-                        Log.i("info", "创建SDK文件夹");
-                        dataOutputStream.writeBytes("mkdir " + SdkDir.toString() + "\n");
-                        dataOutputStream.writeBytes("chmod 777 " + SdkDir.toString() + "\n");
-                    }
-                    if (!gtDir.exists()) {
-                        Log.i("info", "创建Gt文件夹");
-                        dataOutputStream.writeBytes("mkdir " + gtDir.toString() + "\n");
-                        dataOutputStream.writeBytes("chmod 777 " + gtDir.toString() + "\n");
-                    }
-                    if (!logDir.exists()) {
-                        Log.i("info", "创建Log文件夹");
-                        dataOutputStream.writeBytes("mkdir " + logDir.toString() + "\n");
-                        dataOutputStream.writeBytes("chmod 777 " + logDir.toString() + "\n");
-                    }
-                    if (!videoDir.exists()) {
-                        Log.i("info", "创建video文件夹");
-//                      dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
-                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
-                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
-                    } else {
-                        dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
+//    @RequiresApi(api = Build.VERSION_CODES.N)
+//    public void init() {
+//        new Thread(new Runnable() {
+//            final File SdkDir = new File(getFilesDir() + "/Sdk");
+//            final File gtDir = new File(getFilesDir() + "/Gt");
+//            final File logDir = new File(getFilesDir() + "/Log");
+//            final File videoDir = new File(getFilesDir() + "/Video");
+//            final File auto = new File("/data/local/tmp/AutoTest");
+//            @Override
+//            public void run() {
+//                //启动时先删除之前的log
+//                SdkDir.delete();
+//                gtDir.delete();
+//                logDir.delete();
+//                videoDir.delete();
+////                auto.delete();
+//                Cmd.execute("rm "+auto);
+//                try {
+//
+//                    Process mkdirProcess = Runtime.getRuntime().exec("su");
+//                    DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
+//                    Log.i("info", "程序进入初始化");
+//                    if (!SdkDir.exists()) {
+//                        Log.i("info", "创建SDK文件夹");
+//                        dataOutputStream.writeBytes("mkdir " + SdkDir.toString() + "\n");
+//                        dataOutputStream.writeBytes("chmod 777 " + SdkDir.toString() + "\n");
+//                    }
+//                    if (!gtDir.exists()) {
+//                        Log.i("info", "创建Gt文件夹");
+//                        dataOutputStream.writeBytes("mkdir " + gtDir.toString() + "\n");
+//                        dataOutputStream.writeBytes("chmod 777 " + gtDir.toString() + "\n");
+//                    }
+//                    if (!logDir.exists()) {
+//                        Log.i("info", "创建Log文件夹");
+//                        dataOutputStream.writeBytes("mkdir " + logDir.toString() + "\n");
+//                        dataOutputStream.writeBytes("chmod 777 " + logDir.toString() + "\n");
+//                    }
+//                    if (!videoDir.exists()) {
+//                        Log.i("info", "创建video文件夹");
+////                      dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
 //                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
 //                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
-                    }
-                    dataOutputStream.flush();
-                    dataOutputStream.close();
-                    mkdirProcess.waitFor();
-                    mkdirProcess.destroy();
-                    Log.i("info", "Initialization complete");
-                } catch (IOException | InterruptedException e) {
-                    LogUtils.e("Failed to initialize folder");
-                    LogUtils.e(e);
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-    }
+//                    } else {
+//                        dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
+////                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
+////                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
+//                    }
+//                    dataOutputStream.flush();
+//                    dataOutputStream.close();
+//                    mkdirProcess.waitFor();
+//                    mkdirProcess.destroy();
+//                    Log.i("info", "Initialization complete");
+//                } catch (IOException | InterruptedException e) {
+//                    LogUtils.e("Failed to initialize folder");
+//                    LogUtils.e(e);
+//                    e.printStackTrace();
+//                }
+//            }
+//        }).start();
+//    }
 }

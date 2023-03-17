@@ -2,35 +2,30 @@ package com.sensetime.autotest.service;
 
 import android.app.Notification;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-
 import androidx.annotation.RequiresApi;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.entity.DeviceMessage;
-import com.sensetime.autotest.entity.Task;
-import com.sensetime.autotest.entity.TaskInfo;
 import com.sensetime.autotest.server.WebSocketServer;
 import com.sensetime.autotest.util.MonitoringUtil;
 import com.sensetime.autotest.util.Wsutil;
 
 import org.java_websocket.handshake.ServerHandshake;
-import org.jboss.netty.util.internal.SystemPropertyUtil;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 public class WebSocketService extends Service {
+
+    public static WebSocketService instance ;
 
     private final static String TAG = "WebSocketClient";
 
@@ -40,17 +35,16 @@ public class WebSocketService extends Service {
 
     public static boolean isRunning = false;
 
-//    private Context mContext = getBaseContext();
-
     private URI uri;
 
     public WebSocketServer client;
 
-    private WebSocketClientBinder mBinder = new WebSocketClientBinder();
+    private final WebSocketClientBinder mBinder = new WebSocketClientBinder();
 
     //设置intent用来向MainActivity传递消息修改UI
-    private Intent intent = new Intent("com.caisang");
+    private final Intent intent = new Intent("com.caisang");
 
+    public static WebSocketService singleton;
     //用于Activity和service通讯
     public class WebSocketClientBinder extends Binder {
         public WebSocketService getService() {
@@ -66,6 +60,7 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance=this;
         initSocketClient();
         mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
 
@@ -99,22 +94,6 @@ public class WebSocketService extends Service {
             sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
         }
         return START_STICKY;
-    }
-
-    public static class GrayInnerService extends Service {
-
-        @Override
-        public int onStartCommand(Intent intent, int flags, int startId) {
-            startForeground(GRAY_SERVICE_ID, new Notification());
-            stopForeground(true);
-            stopSelf();
-            return super.onStartCommand(intent, flags, startId);
-        }
-
-        @Override
-        public IBinder onBind(Intent intent) {
-            return null;
-        }
     }
 
     @Override
@@ -170,19 +149,6 @@ public class WebSocketService extends Service {
                         resMsg1.setData(respMap1);
                         sendMsg(JSON.toJSONString(resMsg1));
                 }
-
-//                Intent intentTask = new Intent("com.sensetime.autotest");
-//                Bundle bundle = new Bundle();
-//                bundle.putString("task",message);
-//                intentTask.putExtras(bundle);
-//                startService(intentTask);
-//                System.out.println(message);
-//                System.out.println("收到一次消息");
-//                EnableTaskService enableTaskService = new EnableTaskService(getBaseContext());
-//                Task task= JSON.parseObject(message, Task.class);
-//                intent.putExtra("task",JSON.toJSONString(task));
-//                sendBroadcast(intent);
-//                enableTaskService.init(task);
             }
 
             @Override
@@ -193,7 +159,6 @@ public class WebSocketService extends Service {
             @Override
             public void onClose(int code, String reason, boolean remote) {//在连接断开时调用
 //                LogUtil.e(TAG, "onClose() 连接断开_reason：" + reason);
-
                 mHandler.removeCallbacks(heartBeatRunnable);
                 mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
             }
@@ -201,7 +166,6 @@ public class WebSocketService extends Service {
             @Override
             public void onError(Exception ex) {//在连接出错时调用
 //                LogUtil.e(TAG, "onError() 连接出错：" + ex.getMessage());
-
                 mHandler.removeCallbacks(heartBeatRunnable);
                 mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
             }

@@ -1,11 +1,8 @@
 package com.sensetime.autotest.service;
 
 import android.app.IntentService;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.IBinder;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -31,12 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+import dagger.hilt.android.AndroidEntryPoint;
+import dagger.hilt.android.qualifiers.ApplicationContext;
 import lombok.SneakyThrows;
 
+@AndroidEntryPoint
 public class EnableTaskService extends IntentService {
 
+    @ApplicationContext
     private Context mContext;
 
     List<String[]> gtList = new LinkedList<>();
@@ -49,8 +50,10 @@ public class EnableTaskService extends IntentService {
 
     int process = 0;
 
-    private WebSocketService webSocketService;
+    @Inject
+    HttpUtil httpUtil;
 
+    WebSocketService webSocketService = WebSocketService.instance;
 
     private final Intent intent = new Intent("com.caisang");
 
@@ -72,16 +75,16 @@ public class EnableTaskService extends IntentService {
         CountDownLatch prepareTask = new CountDownLatch(3);
         //sdk 准备
         LogUtils.i("Start SDK preparation");
-        HttpUtil.downloadFile(mContext, prepareTask, task.getSdkId(), "sdk", task.getSdkRootPath());
+        httpUtil.downloadFile(mContext, prepareTask, task.getSdkId(), "sdk", task.getSdkRootPath());
 //        prepareTask.countDown();
         LogUtils.i("SDK preparation is complete");
         //gt 准备
         LogUtils.i("Start GT preparation");
-        HttpUtil.downloadFile(mContext, prepareTask, task.getGtId(), "gt");
+        httpUtil.downloadFile(mContext, prepareTask, task.getGtId(), "gt");
         LogUtils.i("Gt preparation is complete");
         //获取已经上传到测试平台的log
         LogUtils.i("Start Log preparation");
-        HttpUtil.downloadFile(mContext, prepareTask, task.getId(), "log");
+        httpUtil.downloadFile(mContext, prepareTask, task.getId(), "log");
         LogUtils.i("Log preparation is complete");
         try {
             prepareTask.await();
@@ -110,11 +113,6 @@ public class EnableTaskService extends IntentService {
             sendServer();
         }
 
-    }
-
-    private void bindWebSocket() {
-        Intent intent = new Intent(getBaseContext(), WebSocketService.class);
-        bindService(intent, coon, BIND_AUTO_CREATE);
     }
 
     public void prepareGtList(Context context, Task task) {
@@ -170,7 +168,7 @@ public class EnableTaskService extends IntentService {
                         String path = gt[0];
 
                         try {
-                            HttpUtil.downloadFile(mContext, semaphore, path, "video");
+                            httpUtil.downloadFile(mContext, semaphore, path, "video");
                             System.out.println("请求下载视频文件");
                             semaphore.acquire();
                             System.out.println("下载视频文件完成");
@@ -197,7 +195,7 @@ public class EnableTaskService extends IntentService {
                     respMap.put("id", task.getId());
                     for (int i = 0; i < 3; i++) {
                         sendServer();
-                        sleep(3000);
+                        sleep();
                     }
                     LogUtils.i("finish");
                     WebSocketService.isRunning = false;
@@ -222,7 +220,7 @@ public class EnableTaskService extends IntentService {
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
 //                NfsServer.uploadFile(context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"), task.getId().toString());
-                HttpUtil.fileUpload(task.getId(), context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                httpUtil.fileUpload(task.getId(), context.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 PowerShell.cmd("cd " + context.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                 readyVideo.remove(0);
@@ -247,10 +245,10 @@ public class EnableTaskService extends IntentService {
         webSocketService.sendMsg(JSON.toJSONString(resMsg));
     }
 
-    static void sleep(long time) {
+    static void sleep() {
         try {
             System.gc();
-            Thread.sleep(time);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -258,37 +256,15 @@ public class EnableTaskService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        bindWebSocket();
-        LogUtils.e("绑定websockets");
         assert intent != null;
         JSONObject task = JSONObject.parseObject(intent.getExtras().getString("task"));
         mContext = getBaseContext();
-        System.out.println(task);
         Task task1 = JSON.toJavaObject(task, Task.class);
         init(task1);
     }
 
-    ServiceConnection coon = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            webSocketService = ((WebSocketService.WebSocketClientBinder) service).getService();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-
-        }
-    };
-
-    private void unBindWebSocket() {
-//        Intent intent = new Intent(getBaseContext(),WebSocketService.class);
-        unbindService(coon);
-    }
-
     @Override
     public void onDestroy() {
-        LogUtils.i("运行完成准备解除websocket的使用");
-        unbindService(coon);
-//        super.onDestroy();
+        super.onDestroy();
     }
 }

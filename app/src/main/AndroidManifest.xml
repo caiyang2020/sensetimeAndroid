@@ -43,11 +43,6 @@
                 <action android:name="WebSocket" />
             </intent-filter>
         </service>
-        <service
-            android:name=".service.WebSocketService$GrayInnerService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":gray" />
         <service android:name=".service.EnableTaskService"
             android:enabled="true"
             android:exported="false">
