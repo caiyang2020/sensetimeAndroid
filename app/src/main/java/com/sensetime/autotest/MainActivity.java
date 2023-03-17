@@ -325,12 +325,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 //启动时先删除之前的log
-                SdkDir.delete();
-                gtDir.delete();
-                logDir.delete();
-                videoDir.delete();
-//                auto.delete();
-                Cmd.execute("rm "+auto);
+                Cmd.execute("rm -rf "+SdkDir);
+                Cmd.execute("rm -rf "+gtDir);
+                Cmd.execute("rm -rf "+logDir);
+                Cmd.execute("rm -rf "+videoDir);
+                Cmd.execute("rm -rf "+auto);
                 try {
 
                     Process mkdirProcess = Runtime.getRuntime().exec("su");
@@ -361,6 +360,8 @@ public class MainActivity extends AppCompatActivity {
 //                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
 //                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
                     }
+                    dataOutputStream.writeBytes("mkdir " + auto.toString() + "\n");
+                    dataOutputStream.writeBytes("chmod 777 " + auto.toString() + "\n");
                     dataOutputStream.flush();
                     dataOutputStream.close();
                     mkdirProcess.waitFor();

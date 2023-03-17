@@ -535,6 +535,7 @@ public class HttpUtil {
                 LogUtils.i("log文件上传成功");
                 assert response.body() != null;
                 response.body().close();
+                file.delete();
             }
         });
     }
