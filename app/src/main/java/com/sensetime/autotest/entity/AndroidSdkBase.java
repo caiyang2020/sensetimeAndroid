@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.apkfuns.logutils.LogUtils;
+import com.sensetime.autotest.MainActivity;
 import com.sensetime.autotest.config.ThreadPool;
 import com.sensetime.autotest.util.Cmd;
 
@@ -21,54 +22,29 @@ import dagger.hilt.android.qualifiers.ActivityContext;
 import dagger.hilt.android.qualifiers.ApplicationContext;
 
 @Module
-@InstallIn(ApplicationComponent.class)
+@InstallIn({ApplicationComponent.class})
 public class AndroidSdkBase {
-
-    Context mContext ;
-
-//    private final String SdkDir = mContext.getFilesDir() + File.separator + "Sdk";
-//
-//    private final String gtDir = mContext.getFilesDir() + File.separator + "Gt";
-//
-//    private final String logDir = mContext.getFilesDir() + File.separator + "Log";
-//
-//    private final String videoDir = mContext.getFilesDir() + File.separator + "Video";
-//
-//    private final String auto = "/data/local/tmp/AutoTest";
-
-
-    public AndroidSdkBase(@ApplicationContext Context mContext) {
-        this.mContext = mContext;
-    }
 
     @Provides
     @Singleton
     public AndroidSdkBase getAndroidSdkBase(){
-        return new AndroidSdkBase(@ActivityContext Context);
+        return this;
     }
 
     public void init() {
-        
-
+        Context mContext = MainActivity.getContext();
         String SdkDir = mContext.getFilesDir() + File.separator + "Sdk";
-         String gtDir = mContext.getFilesDir() + File.separator + "Gt";
-
-         String logDir = mContext.getFilesDir() + File.separator + "Log";
-
-         String videoDir = mContext.getFilesDir() + File.separator + "Video";
-
-         String auto = "/data/local/tmp/AutoTest";
+        String gtDir = mContext.getFilesDir() + File.separator + "Gt";
+        String logDir = mContext.getFilesDir() + File.separator + "Log";
+        String videoDir = mContext.getFilesDir() + File.separator + "Video";
+        String auto = "/data/local/tmp/AutoTest";
         ThreadPool.Executor.execute(() -> {
             //启动时先删除之前的log
-            File temp = new File(SdkDir);
-            temp.delete();
-            temp = new File(gtDir);
-            temp.delete();
-            temp = new File(logDir);
-            temp.delete();
-            temp = new File(videoDir);
-            temp.delete();
-            Cmd.execute("rm " + auto);
+            Cmd.execute("rm -rf " + SdkDir);
+            Cmd.execute("rm -rf " + gtDir);
+            Cmd.execute("rm -rf " + logDir);
+            Cmd.execute("rm -rf " + videoDir);
+            Cmd.execute("rm -rf " + auto);
             try {
                 Process mkdirProcess = Runtime.getRuntime().exec("su");
                 DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
@@ -85,6 +61,9 @@ public class AndroidSdkBase {
                 Log.i("info", "创建video文件夹");
                 dataOutputStream.writeBytes("mkdir " + videoDir + "\n");
                 dataOutputStream.writeBytes("chmod 777 " + videoDir + "\n");
+                Log.i("info", "创建测试temp文件夹");
+                dataOutputStream.writeBytes("mkdir " + auto + "\n");
+                dataOutputStream.writeBytes("chmod 777 " + auto + "\n");
                 dataOutputStream.flush();
                 dataOutputStream.close();
                 mkdirProcess.waitFor();

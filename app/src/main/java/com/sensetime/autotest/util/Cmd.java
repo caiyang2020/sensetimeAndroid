@@ -35,4 +35,28 @@ public class Cmd {
             LogUtils.e(e);
         }
     }
+
+    public static void executes(String... cmds) {
+        String successInfo = "";
+        try {
+            Process process = Runtime.getRuntime().exec("su");
+            DataOutputStream dos = new DataOutputStream(process.getOutputStream());
+//            dos.writeBytes("cd /data/data/com.sensetime.autotest" + "\n");
+            for (String cmd :
+                    cmds) {
+                dos.writeBytes(cmd + "\n");
+            }
+            dos.writeBytes("");
+            dos.flush();
+            dos.close();
+            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((successInfo = br.readLine()) != null) {
+                Log.i("info", successInfo);
+            }
+            process.waitFor();
+            process.destroy();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 }

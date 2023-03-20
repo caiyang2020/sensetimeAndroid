@@ -1,5 +1,6 @@
 package com.sensetime.autotest;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +18,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.StrictMode;
 import android.provider.Settings;
 import android.view.View;
@@ -28,11 +31,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.log2file.LogFileEngineFactory;
 import com.apkfuns.logutils.LogUtils;
 import com.sensetime.autotest.adapyer.MyAdapter;
+import com.sensetime.autotest.config.ThreadPool;
 import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.entity.AndroidSdkBase;
+import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.service.WebSocketService;
 import com.sensetime.autotest.util.Wsutil;
 
@@ -45,64 +51,45 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Objects;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
-import dagger.hilt.android.qualifiers.ApplicationContext;
 import lombok.SneakyThrows;
 
 
 @AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
 
-    public WebSocketService WebSClientService = WebSocketService.instance;
+    private final WebSocketService WebSClientService = WebSocketService.instance;
+//    private final ThreadPoolExecutor executor = ThreadPool.Executor;
 
-    Context mContext;
+    @SuppressLint("StaticFieldLeak")
+    private static Context mContext;
 
     @Inject
     AndroidSdkBase androidSdkBase;
 
-    private AppBroadcast receiver;
-
+    private static Handler MainActivityHandler;
+//    private AppBroadcast receiver;
     private SQLiteOpenHelper myDBHelper;
-
     private TextView deviceId;
-
     private TextView taskName;
-
     private TextView sdk;
-
     private TextView runFunc;
-
     private TextView funGt;
-
     private Button connect;
-
     private Button user;
-
     private ImageView image;
-
     private ProgressBar pb;
     private TextView pbText;
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mContext = getApplication();
-        initLog();
-        initUi();
-        addPermission();
-        openDataBase();
-        androidSdkBase.init();
-        String androidID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
-        Wsutil.devicesID = androidID;
-        LogUtils.e(androidID);
-        //启动服务
-        startWebSClientService();
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        applicationInit();
     }
 
     @SneakyThrows
@@ -153,11 +140,6 @@ public class MainActivity extends AppCompatActivity {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
             LogUtils.i("The system permission request is complete");
-            //获取广播
-            IntentFilter filter = new IntentFilter("com.caisang");
-            receiver = new AppBroadcast();
-            registerReceiver(receiver, filter);
-            LogUtils.i("Broadcast Listener registration is complete");
         }
     }
 
@@ -165,55 +147,6 @@ public class MainActivity extends AppCompatActivity {
     private void startWebSClientService() {
         Intent intent = new Intent(mContext, WebSocketService.class);
         startService(intent);
-    }
-
-    class AppBroadcast extends BroadcastReceiver {
-
-        //消息接收模块
-        @SuppressLint("SetTextI18n")
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            String message = null;
-            if ((message = intent.getStringExtra("task")) != null)
-//            {String message = intent.getStringExtra("task");
-            {
-                Intent intentTask = new Intent();
-                intentTask.setPackage(getPackageName());
-                intentTask.setAction("com.auto.test");
-                Bundle bundle = new Bundle();
-                bundle.putString("task", message);
-                intentTask.putExtras(bundle);
-//                intentTask.putExtra("context", (Parcelable) context);
-                startService(intentTask);
-                LogUtils.i("任务启动");
-            }
-
-            int process = intent.getIntExtra("process", 1000);
-//            Task task = JSON.parseObject(intent.getStringExtra("task"),Task.class);
-//            if (task!=null) {
-//                taskName.setText(task.getTaskName());
-//                sdk.setText(task.getSdkPath().split("/")[task.getSdkPath().split("/").length - 1].replace(".tar", ""));
-//                funGt.setText(task.getGtPath().split("/")[task.getGtPath().split("/").length - 1].replace(".csv", ""));
-//                runFunc.setText(task.getFunc());
-//            }
-            if (process != 1000) {
-                pb.setProgress(process);
-                pbText.setText(process + "%");
-            }
-
-//            String message;
-//            if ((message = intent.getStringExtra("message"))!=null){
-//                try {
-//                    client.send(message);
-//                }catch (WebsocketNotConnectedException e){
-//
-//                }
-//
-//            }
-
-
-        }
     }
 
     public void requestPermission() {
@@ -275,64 +208,61 @@ public class MainActivity extends AppCompatActivity {
         listView.setAdapter(myAdapter);
     }
 
-//    @RequiresApi(api = Build.VERSION_CODES.N)
-//    public void init() {
-//        new Thread(new Runnable() {
-//            final File SdkDir = new File(getFilesDir() + "/Sdk");
-//            final File gtDir = new File(getFilesDir() + "/Gt");
-//            final File logDir = new File(getFilesDir() + "/Log");
-//            final File videoDir = new File(getFilesDir() + "/Video");
-//            final File auto = new File("/data/local/tmp/AutoTest");
-//            @Override
-//            public void run() {
-//                //启动时先删除之前的log
-//                SdkDir.delete();
-//                gtDir.delete();
-//                logDir.delete();
-//                videoDir.delete();
-////                auto.delete();
-//                Cmd.execute("rm "+auto);
-//                try {
-//
-//                    Process mkdirProcess = Runtime.getRuntime().exec("su");
-//                    DataOutputStream dataOutputStream = new DataOutputStream(mkdirProcess.getOutputStream());
-//                    Log.i("info", "程序进入初始化");
-//                    if (!SdkDir.exists()) {
-//                        Log.i("info", "创建SDK文件夹");
-//                        dataOutputStream.writeBytes("mkdir " + SdkDir.toString() + "\n");
-//                        dataOutputStream.writeBytes("chmod 777 " + SdkDir.toString() + "\n");
-//                    }
-//                    if (!gtDir.exists()) {
-//                        Log.i("info", "创建Gt文件夹");
-//                        dataOutputStream.writeBytes("mkdir " + gtDir.toString() + "\n");
-//                        dataOutputStream.writeBytes("chmod 777 " + gtDir.toString() + "\n");
-//                    }
-//                    if (!logDir.exists()) {
-//                        Log.i("info", "创建Log文件夹");
-//                        dataOutputStream.writeBytes("mkdir " + logDir.toString() + "\n");
-//                        dataOutputStream.writeBytes("chmod 777 " + logDir.toString() + "\n");
-//                    }
-//                    if (!videoDir.exists()) {
-//                        Log.i("info", "创建video文件夹");
-////                      dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
-//                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
-//                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
-//                    } else {
-//                        dataOutputStream.writeBytes("rm " + videoDir.toString() + "/*\n");
-////                        dataOutputStream.writeBytes("mkdir " + videoDir.toString() + "\n");
-////                        dataOutputStream.writeBytes("chmod 777 " + videoDir.toString() + "\n");
-//                    }
-//                    dataOutputStream.flush();
-//                    dataOutputStream.close();
-//                    mkdirProcess.waitFor();
-//                    mkdirProcess.destroy();
-//                    Log.i("info", "Initialization complete");
-//                } catch (IOException | InterruptedException e) {
-//                    LogUtils.e("Failed to initialize folder");
-//                    LogUtils.e(e);
-//                    e.printStackTrace();
-//                }
-//            }
-//        }).start();
-//    }
+    private void applicationInit() {
+        mContext = getApplication();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            initLog();
+        }
+        initUi();
+        addPermission();
+        openDataBase();
+        androidSdkBase.init();
+        String androidID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
+        Wsutil.devicesID = androidID;
+        LogUtils.e(androidID);
+        CreateHandler();
+        //启动服务
+        startWebSClientService();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @SuppressLint("HandlerLeak")
+    private void CreateHandler() {
+        MainActivityHandler = new Handler() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                switch (msg.what){
+                    case 1:
+                        Task test = JSONObject.parseObject(msg.getData().getString("task"),Task.class);
+                        taskName.setText(test.getTaskName());
+                        sdk.setText(test.getSdkId()+"");
+                        funGt.setText(test.getGtId()+"");
+                        runFunc.setText(test.getRunFunc());
+                        break;
+                    case 2:
+                        int process = msg.getData().getInt("process");
+                        pb.setProgress(process);
+                        pbText.setText(process + "%");
+                        break;
+                    default:
+                        System.out.println("kongkongruye");
+                }
+            }
+        };
+    }
+
+
+    /**
+     * 以下全部为getter
+     * @return
+     */
+    public static Handler getMainActivityHandler() {
+        return MainActivityHandler;
+    }
+
+    public static Context getContext(){
+
+        return mContext;
+    }
 }

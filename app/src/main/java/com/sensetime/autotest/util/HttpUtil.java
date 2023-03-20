@@ -423,7 +423,6 @@ public class HttpUtil {
 
                 File localFile;
                 switch (type) {
-
                     case "sdk":
                         localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
                         break;
@@ -433,7 +432,6 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-//                String filename = url.substring(url.lastIndexOf("/") + 1);
                 try {
                     sink = Okio.sink(localFile);
                     bufferedSink = Okio.buffer(sink);

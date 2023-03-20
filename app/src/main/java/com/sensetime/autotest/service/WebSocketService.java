@@ -5,9 +5,12 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -39,23 +42,9 @@ public class WebSocketService extends Service {
 
     public WebSocketServer client;
 
-    private final WebSocketClientBinder mBinder = new WebSocketClientBinder();
-
-    //设置intent用来向MainActivity传递消息修改UI
-    private final Intent intent = new Intent("com.caisang");
+    Intent intentTask = new Intent();
 
     public static WebSocketService singleton;
-    //用于Activity和service通讯
-    public class WebSocketClientBinder extends Binder {
-        public WebSocketService getService() {
-            return WebSocketService.this;
-        }
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
 
     @Override
     public void onCreate() {
@@ -84,10 +73,7 @@ public class WebSocketService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-//        //初始化websocket
-//        initSocketClient();
-//        mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
-
+        Log.i(TAG, "onStartCommand: 被调用了");
         if (client != null && client.isOpen()) {
             String message = intent.getStringExtra("message");
             Log.i(TAG, "收到消息："+message);
@@ -103,9 +89,15 @@ public class WebSocketService extends Service {
         super.onDestroy();
     }
 
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
     private void initSocketClient() {
         URI uri = URI.create(Wsutil.ws + Wsutil.devicesID);
-        Log.i(TAG,"正在连接服务："+Wsutil.ws);
+        Log.i(TAG,"正在连接服务："+Wsutil.ws+Wsutil.devicesID);
         client = new WebSocketServer(uri) {
             @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
@@ -131,12 +123,16 @@ public class WebSocketService extends Service {
                         break;
                     case 1:
                         LogUtils.i("收到服务端发送的任务，开始运行任务");
-//                        Task taskInfo = JSON.parseObject(deviceMessage.getData(),Task.class);
                         JSONObject jsonObject = JSONObject.parseObject(message);
                         JSONObject json1 = JSONObject.parseObject(jsonObject.getString("data"));
-                        System.out.println(json1.get("cmd"));
-                        intent.putExtra("task", json1.toJSONString());
-                        sendBroadcast(intent);
+                        Log.i(TAG, "onMessage: "+json1.get("cmd"));
+                        intentTask.setPackage(getPackageName());
+                        intentTask.setAction("com.auto.test");
+                        Bundle bundle = new Bundle();
+                        bundle.putString("task", JSONObject.toJSONString(json1));
+                        intentTask.putExtras(bundle);
+                        startService(intentTask);
+                        LogUtils.i("任务启动");
                         break;
 
                     case 2:
