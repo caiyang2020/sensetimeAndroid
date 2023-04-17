@@ -209,6 +209,8 @@ public class EnableTaskService extends IntentService {
                 }
                 File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
+                    Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
+                            "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
                     readyVideo.remove(0);
                     continue;
                 }
@@ -218,7 +220,6 @@ public class EnableTaskService extends IntentService {
                         mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 //执行命令
                 Cmd.executes( "cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
-                        "pwd",
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
                 httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
@@ -255,7 +256,6 @@ public class EnableTaskService extends IntentService {
                 msg.setData(bundle);
                 break;
         }
-
         mainActivityHandler.sendMessage(msg);
     }
 
@@ -283,6 +283,7 @@ public class EnableTaskService extends IntentService {
 
     @Override
     public void onDestroy() {
+        LogUtils.e("执行器运行完毕，开始执行销毁");
         super.onDestroy();
     }
 }

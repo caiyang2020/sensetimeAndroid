@@ -84,8 +84,7 @@ public class WebSocketService extends Service {
 
     @Override
     public void onDestroy() {
-        closeConnect();
-        LogUtils.w("ws被销毁");
+        LogUtils.e("ws被销毁客户端");
         super.onDestroy();
     }
 
@@ -107,9 +106,8 @@ public class WebSocketService extends Service {
                     case 0:
                         DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
                         Map<String, Object> respMap = new HashMap<>(1);
-                        LogUtils.i("isRunning："+isRunning);
                         LogUtils.i("com.sensetime.autotest.service.EnableTaskService："+MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService"));
-                        if ( isRunning || MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService")) {
+                        if ( MonitoringUtil.isServiceWorked(getBaseContext(), "com.sensetime.autotest.service.EnableTaskService")) {
                             resMsg.setCode(0);
                             respMap.put("status", 1);
                             resMsg.setData(respMap);
@@ -154,14 +152,14 @@ public class WebSocketService extends Service {
 
             @Override
             public void onClose(int code, String reason, boolean remote) {//在连接断开时调用
-//                LogUtil.e(TAG, "onClose() 连接断开_reason：" + reason);
+                LogUtils.e(TAG, "onClose() 连接断开_reason：" + reason);
                 mHandler.removeCallbacks(heartBeatRunnable);
                 mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
             }
 
             @Override
             public void onError(Exception ex) {//在连接出错时调用
-//                LogUtil.e(TAG, "onError() 连接出错：" + ex.getMessage());
+                LogUtils.e(TAG, "onError() 连接出错：" + ex.getMessage());
                 mHandler.removeCallbacks(heartBeatRunnable);
                 mHandler.postDelayed(heartBeatRunnable, CLOSE_RECON_TIME);//开启心跳检测
             }

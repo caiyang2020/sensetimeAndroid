@@ -6,13 +6,13 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -26,7 +26,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,8 +33,8 @@ import android.widget.Toast;
 import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.log2file.LogFileEngineFactory;
 import com.apkfuns.logutils.LogUtils;
-import com.sensetime.autotest.adapyer.MyAdapter;
-import com.sensetime.autotest.config.ThreadPool;
+import com.sensetime.autotest.adapter.Msg;
+import com.sensetime.autotest.adapter.MyAdapter;
 import com.sensetime.autotest.database.MyDBOpenHelper;
 import com.sensetime.autotest.entity.AndroidSdkBase;
 import com.sensetime.autotest.entity.Task;
@@ -47,11 +46,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.inject.Inject;
 
@@ -64,15 +63,14 @@ public class MainActivity extends AppCompatActivity {
 
     private final WebSocketService WebSClientService = WebSocketService.instance;
 //    private final ThreadPoolExecutor executor = ThreadPool.Executor;
-
+    private List<Msg> msgList = new ArrayList<>();
     @SuppressLint("StaticFieldLeak")
     private static Context mContext;
 
     @Inject
     AndroidSdkBase androidSdkBase;
-
+    private MyAdapter adapter;
     private static Handler MainActivityHandler;
-//    private AppBroadcast receiver;
     private SQLiteOpenHelper myDBHelper;
     private TextView deviceId;
     private TextView taskName;
@@ -84,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView image;
     private ProgressBar pb;
     private TextView pbText;
+    private RecyclerView msgRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,57 +132,10 @@ public class MainActivity extends AppCompatActivity {
         LogUtils.i("Database preparation is complete");
     }
 
-    private void addPermission() {
-        requestPermission();
-        //升级root权限，这个是启动中最重要的一步
-        if (upgradeRootPermission(getPackageCodePath())){
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-            LogUtils.i("The system permission request is complete");
-        }
-    }
-
     //启动Websocket服务
     private void startWebSClientService() {
         Intent intent = new Intent(mContext, WebSocketService.class);
         startService(intent);
-    }
-
-    public void requestPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "申请权限", Toast.LENGTH_SHORT).show();
-            // 申请 相机 麦克风权限
-            ActivityCompat.requestPermissions(this, new String[]{
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
-        }
-    }
-
-    public boolean upgradeRootPermission(String pkgCodePath) {
-        Process process = null;
-        DataOutputStream os = null;
-        try {
-            String cmd = "chmod 777 " + pkgCodePath;
-            process = Runtime.getRuntime().exec("su"); //切换到root帐号
-            os = new DataOutputStream(process.getOutputStream());
-            os.writeBytes(cmd + "\n");
-            os.writeBytes("exit\n");
-            os.flush();
-            process.waitFor();
-        } catch (Exception e) {
-            return false;
-        } finally {
-            try {
-                if (os != null) {
-                    os.close();
-                }
-                assert process != null;
-                process.destroy();
-            } catch (Exception ignored) {
-            }
-        }
-        return true;
     }
 
     public void initUi() {
@@ -202,10 +154,17 @@ public class MainActivity extends AppCompatActivity {
         pbText = findViewById(R.id.textView8);
         deviceId.setText(Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID));
         image.setVisibility(View.VISIBLE);
-        ListView listView = findViewById(R.id.ListView);
-        LinkedList<String> data = new LinkedList<>();
-        MyAdapter myAdapter = new MyAdapter(mContext, data);
-        listView.setAdapter(myAdapter);
+        runOnUiThread(()->{
+            LinearLayoutManager layoutManager = new
+                    LinearLayoutManager(this);
+            msgRecyclerView = findViewById(R.id.RecyclerView);
+            msgRecyclerView.setLayoutManager(layoutManager);
+            adapter = new MyAdapter(msgList);
+            msgRecyclerView.setAdapter(adapter);
+        });
+
+
+
     }
 
     private void applicationInit() {
@@ -214,8 +173,7 @@ public class MainActivity extends AppCompatActivity {
             initLog();
         }
         initUi();
-        addPermission();
-        openDataBase();
+//        openDataBase();
         androidSdkBase.init();
         String androidID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
         Wsutil.devicesID = androidID;
@@ -245,8 +203,17 @@ public class MainActivity extends AppCompatActivity {
                         pb.setProgress(process);
                         pbText.setText(process + "%");
                         break;
+                    case 3:
+                            Msg message = new Msg(msg.getData().getString("successInfo"),0);
+                            msgList.add(message);
+                            adapter.notifyItemInserted(msgList.size()-1);
+                            msgRecyclerView.scrollToPosition(msgList.size()-1);
+                            if (msgList.size()>=40){
+                                msgList.remove(0);
+                            }
+                        break;
                     default:
-                        System.out.println("kongkongruye");
+                        System.out.print("kankannengyong");
                 }
             }
         };
@@ -262,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static Context getContext(){
-
         return mContext;
     }
 }
