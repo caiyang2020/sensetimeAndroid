@@ -24,6 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import dagger.Module;
+import dagger.Provides;
+import dagger.hilt.InstallIn;
+import dagger.hilt.android.components.ApplicationComponent;
+import dagger.hilt.android.components.ServiceComponent;
+import dagger.hilt.android.scopes.ActivityScoped;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
@@ -37,9 +43,17 @@ import okio.BufferedSink;
 import okio.Okio;
 import okio.Sink;
 
+@Module
+@InstallIn({ApplicationComponent.class, ServiceComponent.class})
 public class HttpUtil {
 
-    public static void get(String getUrl) {
+
+    @Provides
+    public HttpUtil getHttpUtil() {
+        return new HttpUtil();
+    }
+
+    public void get(String getUrl) {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(getUrl);
@@ -61,7 +75,7 @@ public class HttpUtil {
         }
     }
 
-    public static void post(String postUrl, Object obj) {
+    public void post(String postUrl, Object obj) {
 
         try {
             // 1. 获取访问地址URL
@@ -156,7 +170,7 @@ public class HttpUtil {
     }
 
 
-    public static void downloadFile(Context mContext, String file, String type) {
+    public void downloadFile(Context mContext, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
@@ -225,7 +239,7 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type) {
+    public void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
@@ -297,7 +311,7 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type) {
+    public void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
         String sourcePath;
         switch (type) {
@@ -379,7 +393,7 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type, String filename) {
+    public void downloadFile(Context mContext, CountDownLatch countDownLatch, Long fileId, String type, String filename) {
         //下载路径，如果路径无效了，可换成你的下载路径
         String sourcePath;
         switch (type) {
@@ -409,7 +423,6 @@ public class HttpUtil {
 
                 File localFile;
                 switch (type) {
-
                     case "sdk":
                         localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
                         break;
@@ -419,7 +432,6 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-//                String filename = url.substring(url.lastIndexOf("/") + 1);
                 try {
                     sink = Okio.sink(localFile);
                     bufferedSink = Okio.buffer(sink);
@@ -445,7 +457,7 @@ public class HttpUtil {
         });
     }
 
-    public static void downloadFile(Context mContext, Semaphore semaphore, String file, String type) throws SocketTimeoutException {
+    public void downloadFile(Context mContext, Semaphore semaphore, String file, String type) throws SocketTimeoutException {
         //下载路径，如果路径无效了，可换成你的下载路径
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
 //        final long startTime = System.currentTimeMillis();
@@ -456,11 +468,11 @@ public class HttpUtil {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                if(Objects.equals(e.getClass(), SocketTimeoutException.class)) {
-                    Log.i("DOWNLOAD","异常捕获");
+                if (Objects.equals(e.getClass(), SocketTimeoutException.class)) {
+                    Log.i("DOWNLOAD", "异常捕获");
                     semaphore.release();
                 }
-                    // 下载失败
+                // 下载失败
 //                Log.i("DOWNLOAD","download failed");
             }
 
@@ -509,7 +521,7 @@ public class HttpUtil {
         });
     }
 
-    public static void fileUpload(Long id, String path) {
+    public void fileUpload(Long id, String path) {
         // 获得输入框中的路径
         File file = new File(path);
         OkHttpClient client = new OkHttpClient();
@@ -531,7 +543,7 @@ public class HttpUtil {
             }
 
             @Override
-            public void onResponse( Call call,  Response response) throws IOException {
+            public void onResponse(Call call, Response response) throws IOException {
                 LogUtils.i("log文件上传成功");
                 assert response.body() != null;
                 response.body().close();

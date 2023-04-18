@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> <!-- 解锁屏幕需要的权限 -->
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" /> <!-- 申请电源锁需要的权限 -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- 震动权限 -->
+    <uses-permission android:name="android.uid.system" /> <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" /> <!-- android 9.0之后使用前台服务，需要添加权限 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
@@ -43,11 +43,6 @@
                 <action android:name="WebSocket" />
             </intent-filter>
         </service>
-        <service
-            android:name=".service.WebSocketService$GrayInnerService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":gray" />
         <service android:name=".service.EnableTaskService"
             android:enabled="true"
             android:exported="false">
