@@ -23,8 +23,11 @@ import com.sensetime.autotest.util.HttpUtil;
 import com.sensetime.autotest.util.PowerShell;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketTimeoutException;
 import java.text.MessageFormat;
@@ -45,6 +48,8 @@ import lombok.SneakyThrows;
 @AndroidEntryPoint
 public class EnableTaskService extends IntentService {
 
+    private final String TAG = "EnableTaskService";
+
     private Context mContext;
 
     private final ExecutorService executor = ThreadPool.Executor;
@@ -55,7 +60,7 @@ public class EnableTaskService extends IntentService {
 
     List<String[]> gtList = new LinkedList<>();
 
-    private final List<String[]> readyVideo = new LinkedList<>();
+    private final List<String> readyVideo = new LinkedList<>();
 
     int num = 0;
 
@@ -107,7 +112,7 @@ public class EnableTaskService extends IntentService {
             respMap.clear();
             //分析生成GT列表
             prepareGtList();
-            sendtoHandler(1,JSONObject.toJSONString(task),mainActivityHandler);
+            sendtoHandler(1, JSONObject.toJSONString(task), mainActivityHandler);
             //程序运行
             runTask();
         } else {
@@ -150,8 +155,47 @@ public class EnableTaskService extends IntentService {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        executor.execute(()->{
+//        executor.execute(()->{
+//            final Semaphore semaphore = new Semaphore(0);
+//            for (String[] gt : gtList) {
+//                try {
+//                    while (readyVideo.size() > 5) {
+//                        Thread.sleep(10000);
+//                    }
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getId() + "/" + gt[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+//                if (Logfile.exists()) {
+//                    num++;
+//                    if ((num * 100 / total) > process) {
+//                        process = num * 100 / total;
+//                        sendtoHandler(2,process,mainActivityHandler);
+//                    }
+//                } else {
+//                    String path = gt[0];
+//                    try {
+//                        httpUtil.downloadFile(mContext, semaphore, path, "video");
+//                        System.out.println("请求下载视频文件");
+//                        semaphore.acquire();
+//                        System.out.println("下载视频文件完成");
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    } catch (SocketTimeoutException e) {
+//                        semaphore.release();
+//                    }
+//                    readyVideo.add(gt);
+//                    taskSemaphore.release();
+//                }
+//            }
+//            String[] strings = {"finish"};
+//            readyVideo.add(strings);
+//        });
+        //蔚来项目专用下载器
+        executor.execute(() -> {
             final Semaphore semaphore = new Semaphore(0);
+            //下载计数器
+            int downloadCount = 0;
             for (String[] gt : gtList) {
                 try {
                     while (readyVideo.size() > 5) {
@@ -165,31 +209,49 @@ public class EnableTaskService extends IntentService {
                     num++;
                     if ((num * 100 / total) > process) {
                         process = num * 100 / total;
-                        sendtoHandler(2,process,mainActivityHandler);
+                        sendtoHandler(2, process, mainActivityHandler);
                     }
                 } else {
-                    String path = gt[0];
+                    String path;
+                    BufferedWriter out = null;
+                    String name = "list" + (downloadCount / 100);
+                    Log.i(TAG, "视频地址是");
                     try {
-                        httpUtil.downloadFile(mContext, semaphore, path, "video");
-                        System.out.println("请求下载视频文件");
-                        semaphore.acquire();
-                        System.out.println("下载视频文件完成");
+                        out = new BufferedWriter(new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100)));
+                        for (int i = 0; i < 100; i++) {
+                            path = gtList.get(downloadCount++)[0];
+                            httpUtil.downloadFile(mContext, semaphore, path, "video");
+//                            Log.i(TAG, "请求下载视频文件 ");
+                            semaphore.acquire();
+                            out.write(mContext.getFilesDir() + File.separator + "Video" + File.separator + path.replaceAll("/", "^") + "\n");
+                            Log.i(TAG, "下载视频文件完成 " + (i+1));
+                        }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (SocketTimeoutException e) {
                         semaphore.release();
+                    } catch (IOException e) {
+                        Log.i(TAG, "log文件写入失败");
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            out.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                    readyVideo.add(gt);
+                    //开始
+                    readyVideo.add(name);
                     taskSemaphore.release();
                 }
             }
-            String[] strings = {"finish"};
-            readyVideo.add(strings);
+//            String[] strings = {"finish"};
+            readyVideo.add("finish");
         });
         //开始循环跑任务
         while (true) {
             if (!readyVideo.isEmpty()) {
-                if (readyVideo.get(0)[0].equals("finish")) {
+                if (readyVideo.get(0).equals("finish")) {
                     LogUtils.i("任务运行完成");
                     resMsg.setCode(1);
                     respMap.put("status", 6);
@@ -207,29 +269,29 @@ public class EnableTaskService extends IntentService {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
                     Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
-                            "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
+                            "rm " + readyVideo.get(0).replaceAll("/", "^"));
                     readyVideo.remove(0);
                     continue;
                 }
-                Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0)[0]);
+                Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0));
                 //拼接字符命令
-                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^"), 30,
-                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^"), 30,
+                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 //执行命令
-                Cmd.executes( "cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
+                Cmd.executes("cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
-                httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
-                        "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
+                        "rm " + readyVideo.get(0).replaceAll("/", "^"));
                 readyVideo.remove(0);
                 num++;
                 if ((num * 100 / total) > process) {
                     process = num * 100 / total;
-                    sendtoHandler(2,process,mainActivityHandler);
+                    sendtoHandler(2, process, mainActivityHandler);
                     resMsg.setCode(1);
                     respMap.put("status", 2);
                     respMap.put("id", task.getId());
@@ -241,18 +303,18 @@ public class EnableTaskService extends IntentService {
         }
     }
 
-    private void sendtoHandler(int what,Object o,Handler mainActivityHandler) {
+    private void sendtoHandler(int what, Object o, Handler mainActivityHandler) {
         Message msg = new Message();
         Bundle bundle = new Bundle();
-        switch (what){
+        switch (what) {
             case 1:
-                msg.what=what;
-                bundle.putString("task",JSONObject.toJSONString(this.task));
+                msg.what = what;
+                bundle.putString("task", JSONObject.toJSONString(this.task));
                 msg.setData(bundle);
                 break;
             case 2:
-                msg.what=2;
-                bundle.putInt("process",process);
+                msg.what = 2;
+                bundle.putInt("process", process);
                 msg.setData(bundle);
                 break;
         }

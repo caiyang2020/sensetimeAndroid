@@ -49,6 +49,7 @@ public class WebSocketService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.i(TAG, "websocket服务启动");
         instance=this;
         initSocketClient();
         mHandler.postDelayed(heartBeatRunnable, HEART_BEAT_RATE);//开启心跳检测
@@ -77,7 +78,6 @@ public class WebSocketService extends Service {
         if (client != null && client.isOpen()) {
             String message = intent.getStringExtra("message");
             Log.i(TAG, "收到消息："+message);
-            sendMsg("{\"code\":0,\"data\":{\"status\":0}}");
         }
         return START_STICKY;
     }
