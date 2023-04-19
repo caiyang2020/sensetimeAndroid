@@ -25,6 +25,7 @@ public class WebSocketServer extends WebSocketClient {
     @Override
     public void onOpen(ServerHandshake handshakedata) {
         Log.e("WebSocketClient", "connect");
+        send("{\"code\":2,\"data\":{\"status\":0}}");
     }
 
     @Override
