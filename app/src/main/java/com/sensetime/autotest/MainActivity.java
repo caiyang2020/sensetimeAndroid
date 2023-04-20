@@ -94,19 +94,16 @@ public class MainActivity extends AppCompatActivity {
     @SneakyThrows
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void initLog() {
-
         LogUtils.getLogConfig()
                 .configAllowLog(true)
                 .configTagPrefix("app")
                 .configShowBorders(false)
                 .configFormatTag("%d{HH:mm:ss:SSS} %t %c");
-
         LogUtils.getLog2FileConfig().configLog2FileEnable(true)
                 // targetSdkVersion >= 23 需要确保有写sdcard权限
                 .configLog2FilePath(getDataDir() + "/cache")
                 .configLog2FileNameFormat("%d{yyyyMMdd}.txt")
                 .configLogFileEngine(new LogFileEngineFactory(mContext));
-
         File logDir = new File(getDataDir() + "/cache");
         @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         Calendar calendar = Calendar.getInstance();
@@ -162,9 +159,6 @@ public class MainActivity extends AppCompatActivity {
             adapter = new MyAdapter(msgList);
             msgRecyclerView.setAdapter(adapter);
         });
-
-
-
     }
 
     private void applicationInit() {
@@ -213,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         break;
                     default:
-                        System.out.print("kankannengyong");
+                        LogUtils.e("消息窗口接收的消息格式不正确，请检查");
                 }
             }
         };
