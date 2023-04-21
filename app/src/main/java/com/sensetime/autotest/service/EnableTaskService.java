@@ -1,8 +1,10 @@
 package com.sensetime.autotest.service;
 
+import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -26,6 +28,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -77,6 +81,10 @@ public class EnableTaskService extends IntentService {
 
     private Map<String, Object> respMap = new HashMap<>(1);
 
+    private Semaphore taskSemaphore = new Semaphore(0);
+
+    private Semaphore downloadSemaphore = new Semaphore(5);
+
     public EnableTaskService() {
         super("EnableTaskService");
         resMsg.setData(respMap);
@@ -127,7 +135,7 @@ public class EnableTaskService extends IntentService {
     }
 
     public void prepareGtList() {
-        InputStreamReader isr;
+        InputStreamReader isr = null;
         String gtName;
         gtName = task.getGtId() + ".csv";
         try {
@@ -136,11 +144,12 @@ public class EnableTaskService extends IntentService {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] strings = line.split(",");
-                strings[0] = strings[0].replace("\uFEFF", "");
+                strings[0] = strings[0].replaceAll("\uFEFF", "");
                 gtList.add(strings);
                 total++;
             }
             LogUtils.i("共检测到" + total + "条数据");
+            isr.close();
         } catch (Exception e) {
             LogUtils.e(e.getMessage());
         }
@@ -148,108 +157,70 @@ public class EnableTaskService extends IntentService {
 
     @SneakyThrows
     public void runTask() {
-
-        final Semaphore taskSemaphore = new Semaphore(0);
         //创建以任务名称创建log保存文件夹
         File dir = new File(mContext.getFilesDir() + "/Log/" + task.getId());
         if (!dir.exists()) {
             dir.mkdir();
         }
-//        executor.execute(()->{
-//            final Semaphore semaphore = new Semaphore(0);
-//            for (String[] gt : gtList) {
-//                try {
-//                    while (readyVideo.size() > 5) {
-//                        Thread.sleep(10000);
-//                    }
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getId() + "/" + gt[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
-//                if (Logfile.exists()) {
-//                    num++;
-//                    if ((num * 100 / total) > process) {
-//                        process = num * 100 / total;
-//                        sendtoHandler(2,process,mainActivityHandler);
-//                    }
-//                } else {
-//                    String path = gt[0];
-//                    try {
-//                        httpUtil.downloadFile(mContext, semaphore, path, "video");
-//                        System.out.println("请求下载视频文件");
-//                        semaphore.acquire();
-//                        System.out.println("下载视频文件完成");
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    } catch (SocketTimeoutException e) {
-//                        semaphore.release();
-//                    }
-//                    readyVideo.add(gt);
-//                    taskSemaphore.release();
-//                }
-//            }
-//            String[] strings = {"finish"};
-//            readyVideo.add(strings);
-//        });
         //蔚来项目专用下载器
         executor.execute(() -> {
-            final Semaphore semaphore = new Semaphore(0);
             //下载计数器
             int downloadCount = 0;
-            for (String[] gt : gtList) {
+            for (int j = 0; j <= gtList.size() / 100; j++) {
                 try {
-                    while (readyVideo.size() > 5) {
-                        Thread.sleep(10000);
-                    }
+                    downloadSemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getId() + "/" + gt[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
-                if (Logfile.exists()) {
-                    num++;
-                    if ((num * 100 / total) > process) {
-                        process = num * 100 / total;
-                        sendtoHandler(2, process, mainActivityHandler);
-                    }
-                } else {
-                    String path;
-                    BufferedWriter out = null;
-                    String name = "list" + (downloadCount / 100);
-                    Log.i(TAG, "视频地址是");
-                    try {
-                        out = new BufferedWriter(new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100)));
-                        for (int i = 0; i < 100; i++) {
-                            path = gtList.get(downloadCount++)[0];
-                            httpUtil.downloadFile(mContext, semaphore, path, "video");
-//                            Log.i(TAG, "请求下载视频文件 ");
-                            semaphore.acquire();
-                            out.write(mContext.getFilesDir() + File.separator + "Video" + File.separator + path.replaceAll("/", "^") + "\n");
-                            Log.i(TAG, "下载视频文件完成 " + (i+1));
-                        }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (SocketTimeoutException e) {
-                        semaphore.release();
-                    } catch (IOException e) {
-                        Log.i(TAG, "log文件写入失败");
-                        e.printStackTrace();
-                    } finally {
+                String path;
+                BufferedWriter out = null;
+                FileWriter fw = null;
+                String name = "list" + j;
+                Log.i(TAG, "视频地址是" + name);
+                CountDownLatch countDownLatch = null;
+                try {
+                    fw = new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100));
+                    out = new BufferedWriter(fw);
+                    countDownLatch = new CountDownLatch(100);
+                    for (int i = 0; i < 100; i++) {
                         try {
-                            out.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                            path = gtList.get(downloadCount++)[0];
+                            httpUtil.downloadFile(mContext, countDownLatch, path, "video");
+                            out.write(mContext.getFilesDir() + File.separator + "Video" + File.separator + path.replaceAll("/", "^") + "\n");
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            Log.i(TAG, "文件全部读写完成");
+                            break;
                         }
                     }
-                    //开始
-                    readyVideo.add(name);
-                    taskSemaphore.release();
+                    out.flush();
+                    out.close();
+                    fw.close();
+                    Log.i(TAG, "下载视频文件完成 " + j);
+                } catch (SocketTimeoutException e) {
+                    Log.e(TAG, "下载视频连接断开",e );
+                } catch (IOException e) {
+                    Log.i(TAG, "log文件写入失败");
+                    e.printStackTrace();
                 }
+                try {
+                    countDownLatch.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                //开始task
+                taskSemaphore.release();
+                readyVideo.add(name);
             }
 //            String[] strings = {"finish"};
             readyVideo.add("finish");
         });
         //开始循环跑任务
         while (true) {
+            try {
+                taskSemaphore.acquire();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0).equals("finish")) {
                     LogUtils.i("任务运行完成");
@@ -264,12 +235,7 @@ public class EnableTaskService extends IntentService {
                     WebSocketService.isRunning = false;
                     break;
                 }
-                try {
-                    taskSemaphore.acquire();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {
                     Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
                             "rm " + readyVideo.get(0).replaceAll("/", "^"));
@@ -284,11 +250,11 @@ public class EnableTaskService extends IntentService {
                 Cmd.executes("cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
-                httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
-                Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
-                        "rm " + readyVideo.get(0).replaceAll("/", "^"));
+                splitLog(Logfile);
+                removePic(mContext.getFilesDir() + "/Video/"+readyVideo.get(0));
                 readyVideo.remove(0);
-                num++;
+                downloadSemaphore.release();
+                num = num + 100;
                 if ((num * 100 / total) > process) {
                     process = num * 100 / total;
                     sendtoHandler(2, process, mainActivityHandler);
@@ -300,6 +266,66 @@ public class EnableTaskService extends IntentService {
                     LogUtils.d("taskProcess", "任务: " + task.getTaskName() + "， 进度更新为：" + process);
                 }
             }
+            Log.i(TAG, "可运行任务余量"+taskSemaphore.availablePermits());
+            Log.i(TAG, "下载任务释放量"+downloadSemaphore.availablePermits());
+        }
+    }
+
+    private void removePic(String s) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(s));
+            String line ;
+            while ((line=br.readLine())!=null){
+                Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
+                                "rm " + line);
+            }
+            br.close();
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "找不到文件");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressLint("SdCardPath")
+    private void splitLog(File logfile) {
+        Log.i(TAG, "正准备分析的log:" + logfile);
+        BufferedReader br;
+        FileReader fr;
+        FileWriter fw ;
+        try {
+            fr = new FileReader(logfile);
+            br = new BufferedReader(fr);
+            String line;
+            String fileName = null;
+            BufferedWriter writeFile = null;
+            fw = null;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("current image")) {
+                    if (writeFile != null) {
+                        writeFile.flush();
+                        writeFile.close();
+                        fw.close();
+                        httpUtil.fileUpload(task.getId(),fileName.replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    }
+                    fileName = mContext.getFilesDir() + "/Log/" + task.getId() + File.separator +line.split("/data/user/0/com.sensetime.autotest/files/Video/")[1];
+                    Log.i(TAG, "生成的log地址" +  fileName);
+                    fw = new FileWriter(fileName.replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                    writeFile = new BufferedWriter(fw);
+                }
+                if (fileName == null) {
+                    continue;
+                }
+                writeFile.write(line + "\n");
+            }
+            br.close();
+            fr.close();
+        } catch (FileNotFoundException e) {
+            Log.e(TAG, "分解文件失败，文件不存在");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            Log.e(TAG, "splitLog: e", e);
         }
     }
 

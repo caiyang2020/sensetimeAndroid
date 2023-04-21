@@ -4,23 +4,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.StrictMode;
 import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
@@ -28,7 +22,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.alibaba.fastjson.JSONObject;
 import com.apkfuns.log2file.LogFileEngineFactory;
@@ -40,9 +33,6 @@ import com.sensetime.autotest.entity.AndroidSdkBase;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.service.WebSocketService;
 import com.sensetime.autotest.util.Wsutil;
-
-
-import java.io.DataOutputStream;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -62,7 +52,6 @@ import lombok.SneakyThrows;
 public class MainActivity extends AppCompatActivity {
 
     private final WebSocketService WebSClientService = WebSocketService.instance;
-//    private final ThreadPoolExecutor executor = ThreadPool.Executor;
     private List<Msg> msgList = new ArrayList<>();
     @SuppressLint("StaticFieldLeak")
     private static Context mContext;

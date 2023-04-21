@@ -242,20 +242,19 @@ public class HttpUtil {
     public void downloadFile(Context mContext, CountDownLatch countDownLatch, String file, String type) {
         //下载路径，如果路径无效了，可换成你的下载路径
         final String url = "http://savvcenter.sensetime.com/resource/" + file;
-//        final long startTime = System.currentTimeMillis();
-//        Log.i("DOWNLOAD","startTime="+startTime);
-
         Request request = new Request.Builder().url(url).build();
         new OkHttpClient().newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 // 下载失败
-                e.printStackTrace();
-//                Log.i("DOWNLOAD","download failed");
+//                e.printStackTrace();
+                call.cancel();
+                countDownLatch.countDown();
+                Log.i("DOWNLOAD",file+"download failed");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
 
@@ -283,7 +282,7 @@ public class HttpUtil {
                     bufferedSink.writeAll(response.body().source());
 
                     bufferedSink.close();
-                    Thread.sleep(1000);
+                    response.body().close();
 //                    Log.i("DOWNLOAD","download success");
 //                    Log.i("DOWNLOAD","totalTime="+ (System.currentTimeMillis() - startTime));
                     if (type.equalsIgnoreCase("sdk")) {
@@ -363,6 +362,7 @@ public class HttpUtil {
                     bufferedSink = Okio.buffer(sink);
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
+                    response.body().close();
                     Thread.sleep(1000);
                     switch (type) {
                         case "sdk":
@@ -437,6 +437,7 @@ public class HttpUtil {
                     bufferedSink = Okio.buffer(sink);
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
+                    response.body().close();
                     Thread.sleep(1000);
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
@@ -539,7 +540,7 @@ public class HttpUtil {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                LogUtils.w("文件上传出现问题");
+                LogUtils.w(path+"文件上传出现问题");
             }
 
             @Override
