@@ -11,6 +11,7 @@ import com.apkfuns.logutils.LogUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -257,7 +258,6 @@ public class HttpUtil {
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
-
                 File localFile;
                 switch (type) {
 
@@ -273,18 +273,12 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-                String filename = url.substring(url.lastIndexOf("/") + 1);
                 try {
-//                    String mSDCardPath= Environment.getExternalStorageDirectory().getAbsolutePath();
-//                    File dest = new File(mSDCardPath,   url.substring(url.lastIndexOf("/") + 1));
                     sink = Okio.sink(localFile);
                     bufferedSink = Okio.buffer(sink);
+                    assert response.body() != null;
                     bufferedSink.writeAll(response.body().source());
-
                     bufferedSink.close();
-                    response.body().close();
-//                    Log.i("DOWNLOAD","download success");
-//                    Log.i("DOWNLOAD","totalTime="+ (System.currentTimeMillis() - startTime));
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
 //                            "mkdir "+nfsFile.getName().replace(".tar",""),
@@ -298,9 +292,13 @@ public class HttpUtil {
 //                        pro.destroy();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
-//                    Log.i("DOWNLOAD","download failed");
+                    if (e.getClass()== FileNotFoundException.class){
+                        return;
+                    }
+                    Log.e("DOWNLOAD","download failed",e);
                 } finally {
+                    assert response.body() != null;
+                    response.body().close();
                     if (bufferedSink != null) {
                         bufferedSink.close();
                     }

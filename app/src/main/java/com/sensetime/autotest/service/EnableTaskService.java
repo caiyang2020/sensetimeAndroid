@@ -187,9 +187,9 @@ public class EnableTaskService extends IntentService {
                             path = gtList.get(downloadCount++)[0];
                             httpUtil.downloadFile(mContext, countDownLatch, path, "video");
                             out.write(mContext.getFilesDir() + File.separator + "Video" + File.separator + path.replaceAll("/", "^") + "\n");
-                        } catch (ArrayIndexOutOfBoundsException e) {
+                        } catch (IndexOutOfBoundsException e) {
+                            countDownLatch.countDown();
                             Log.i(TAG, "文件全部读写完成");
-                            break;
                         }
                     }
                     out.flush();
@@ -213,6 +213,7 @@ public class EnableTaskService extends IntentService {
             }
 //            String[] strings = {"finish"};
             readyVideo.add("finish");
+            taskSemaphore.release();
         });
         //开始循环跑任务
         while (true) {
