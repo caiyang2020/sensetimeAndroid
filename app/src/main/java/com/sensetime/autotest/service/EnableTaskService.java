@@ -45,6 +45,8 @@ import lombok.SneakyThrows;
 @AndroidEntryPoint
 public class EnableTaskService extends IntentService {
 
+    private final String TAG = "EnableTaskService";
+
     private Context mContext;
 
     private final ExecutorService executor = ThreadPool.Executor;
@@ -71,6 +73,10 @@ public class EnableTaskService extends IntentService {
     private DeviceMessage<Map<String, Object>> resMsg = new DeviceMessage<>();
 
     private Map<String, Object> respMap = new HashMap<>(1);
+
+    private Semaphore taskSemaphore = new Semaphore(0);
+
+    private Semaphore downloadSemaphore = new Semaphore(5);
 
     public EnableTaskService() {
         super("EnableTaskService");
@@ -143,20 +149,15 @@ public class EnableTaskService extends IntentService {
 
     @SneakyThrows
     public void runTask() {
-
-        final Semaphore taskSemaphore = new Semaphore(0);
         //创建以任务名称创建log保存文件夹
         File dir = new File(mContext.getFilesDir() + "/Log/" + task.getId());
         if (!dir.exists()) {
             dir.mkdir();
         }
         executor.execute(()->{
-            final Semaphore semaphore = new Semaphore(0);
             for (String[] gt : gtList) {
                 try {
-                    while (readyVideo.size() > 5) {
-                        Thread.sleep(10000);
-                    }
+                    downloadSemaphore.acquire();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -170,17 +171,16 @@ public class EnableTaskService extends IntentService {
                 } else {
                     String path = gt[0];
                     try {
-                        httpUtil.downloadFile(mContext, semaphore, path, "video");
-                        System.out.println("请求下载视频文件");
-                        semaphore.acquire();
-                        System.out.println("下载视频文件完成");
+                        httpUtil.downloadFile(mContext, downloadSemaphore, path, "video");
+                        downloadSemaphore.acquire();
+                        Log.i(TAG,"下载视频文件完成");
+                        readyVideo.add(gt);
+                        taskSemaphore.release();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (SocketTimeoutException e) {
-                        semaphore.release();
+                        downloadSemaphore.release();
                     }
-                    readyVideo.add(gt);
-                    taskSemaphore.release();
                 }
             }
             String[] strings = {"finish"};
@@ -225,6 +225,7 @@ public class EnableTaskService extends IntentService {
                 httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
+                downloadSemaphore.release();
                 readyVideo.remove(0);
                 num++;
                 if ((num * 100 / total) > process) {

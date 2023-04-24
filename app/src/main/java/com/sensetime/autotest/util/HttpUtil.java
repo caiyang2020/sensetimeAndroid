@@ -469,21 +469,20 @@ public class HttpUtil {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 if (Objects.equals(e.getClass(), SocketTimeoutException.class)) {
-                    Log.i("DOWNLOAD", "异常捕获");
-                    semaphore.release();
+                    Log.i("DOWNLOAD", "异常捕获",e);
+                }else {
+                    // 下载失败
+                    Log.i("DOWNLOAD", "download failed", e);
                 }
-                // 下载失败
-//                Log.i("DOWNLOAD","download failed");
+                semaphore.release();
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
-
                 File localFile;
                 switch (type) {
-
                     case "sdk":
                         localFile = new File(mContext.getFilesDir() + "/Sdk", url.substring(url.lastIndexOf("/") + 1));
                         break;
@@ -496,7 +495,6 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-                String filename = url.substring(url.lastIndexOf("/") + 1);
                 try {
                     sink = Okio.sink(localFile);
                     bufferedSink = Okio.buffer(sink);
