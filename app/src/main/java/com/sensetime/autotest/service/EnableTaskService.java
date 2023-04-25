@@ -18,6 +18,7 @@ import com.sensetime.autotest.config.ThreadPool;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.util.Cmd;
+import com.sensetime.autotest.util.CommandUtil;
 import com.sensetime.autotest.util.FileUtil;
 import com.sensetime.autotest.util.HttpUtil;
 import com.sensetime.autotest.util.PowerShell;
@@ -67,6 +68,9 @@ public class EnableTaskService extends IntentService {
 
     @Inject
     HttpUtil httpUtil;
+
+    @Inject
+    CommandUtil cu;
 
     WebSocketService webSocketService = WebSocketService.instance;
 
@@ -216,12 +220,14 @@ public class EnableTaskService extends IntentService {
                 }
                 Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0)[0]);
                 //拼接字符命令
-                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^"), 30,
-                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+//                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0)[0].replaceAll("/", "^"), 30,
+//                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                String cmd = cu.createCommand(task,readyVideo);
                 //执行命令
                 Cmd.executes( "cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
                         "source env.sh",
                         "./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
+                System.out.println("./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
                 httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
                         "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));

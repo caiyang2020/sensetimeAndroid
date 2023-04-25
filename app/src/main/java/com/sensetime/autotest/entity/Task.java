@@ -1,11 +1,6 @@
 package com.sensetime.autotest.entity;
 
-import androidx.annotation.NonNull;
-
 import java.io.Serializable;
-
-
-import lombok.Data;
 
 public class Task implements Serializable {
 
