@@ -20,6 +20,7 @@ import com.sensetime.autotest.config.ThreadPool;
 import com.sensetime.autotest.entity.DeviceMessage;
 import com.sensetime.autotest.entity.Task;
 import com.sensetime.autotest.util.Cmd;
+import com.sensetime.autotest.util.CommandUtil;
 import com.sensetime.autotest.util.FileUtil;
 import com.sensetime.autotest.util.HttpUtil;
 import com.sensetime.autotest.util.PowerShell;
@@ -74,6 +75,9 @@ public class EnableTaskService extends IntentService {
 
     @Inject
     HttpUtil httpUtil;
+
+    @Inject
+    CommandUtil cu;
 
     WebSocketService webSocketService = WebSocketService.instance;
 
@@ -135,11 +139,9 @@ public class EnableTaskService extends IntentService {
     }
 
     public void prepareGtList() {
-        InputStreamReader isr = null;
         String gtName;
         gtName = task.getGtId() + ".csv";
-        try {
-            isr = new InputStreamReader(new FileInputStream(mContext.getFilesDir() + "/Gt/" + gtName));
+        try (InputStreamReader isr = new InputStreamReader(new FileInputStream(mContext.getFilesDir() + "/Gt/" + gtName));){
             BufferedReader br = new BufferedReader(isr);
             String line;
             while ((line = br.readLine()) != null) {
@@ -149,7 +151,6 @@ public class EnableTaskService extends IntentService {
                 total++;
             }
             LogUtils.i("共检测到" + total + "条数据");
-            isr.close();
         } catch (Exception e) {
             LogUtils.e(e.getMessage());
         }
@@ -173,14 +174,11 @@ public class EnableTaskService extends IntentService {
                     e.printStackTrace();
                 }
                 String path;
-                BufferedWriter out = null;
-                FileWriter fw = null;
                 String name = "list" + j;
                 Log.i(TAG, "视频地址是" + name);
                 CountDownLatch countDownLatch = null;
-                try {
-                    fw = new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100));
-                    out = new BufferedWriter(fw);
+                try (FileWriter fw = new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100));
+                     BufferedWriter out = new BufferedWriter(fw);){
                     countDownLatch = new CountDownLatch(100);
                     for (int i = 0; i < 100; i++) {
                         try {
@@ -245,8 +243,9 @@ public class EnableTaskService extends IntentService {
                 }
                 Log.i("INFO", "正在执行，当前执行视频" + readyVideo.get(0));
                 //拼接字符命令
-                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^"), 30,
-                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+//                String cmd = MessageFormat.format(task.getCmd(), mContext.getFilesDir() + "/Video/" + readyVideo.get(0).replaceAll("/", "^"), 30,
+//                        mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0).replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
+                String cmd = cu.createCommand(task,readyVideo);
                 //执行命令
                 Cmd.executes("cd /data/local/tmp/AutoTest/" + task.getSdkRootPath(),
                         "source env.sh",
@@ -273,14 +272,12 @@ public class EnableTaskService extends IntentService {
     }
 
     private void removePic(String s) {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(s));
+        try (BufferedReader br = new BufferedReader(new FileReader(s))){
             String line ;
             while ((line=br.readLine())!=null){
                 Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
                                 "rm " + line);
             }
-            br.close();
         } catch (FileNotFoundException e) {
             Log.e(TAG, "找不到文件");
         } catch (IOException e) {
@@ -291,12 +288,8 @@ public class EnableTaskService extends IntentService {
     @SuppressLint("SdCardPath")
     private void splitLog(File logfile) {
         Log.i(TAG, "正准备分析的log:" + logfile);
-        BufferedReader br;
-        FileReader fr;
         FileWriter fw ;
-        try {
-            fr = new FileReader(logfile);
-            br = new BufferedReader(fr);
+        try (BufferedReader br = new BufferedReader(new FileReader(logfile))){
             String line;
             String fileName = null;
             BufferedWriter writeFile = null;
@@ -319,8 +312,6 @@ public class EnableTaskService extends IntentService {
                 }
                 writeFile.write(line + "\n");
             }
-            br.close();
-            fr.close();
         } catch (FileNotFoundException e) {
             Log.e(TAG, "分解文件失败，文件不存在");
         } catch (IOException e) {

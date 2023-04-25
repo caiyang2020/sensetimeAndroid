@@ -256,8 +256,6 @@ public class HttpUtil {
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                Sink sink = null;
-                BufferedSink bufferedSink = null;
                 File localFile;
                 switch (type) {
 
@@ -273,23 +271,15 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-                try {
-                    sink = Okio.sink(localFile);
-                    bufferedSink = Okio.buffer(sink);
+                try (Sink sink =Okio.sink(localFile);
+                         BufferedSink bufferedSink = Okio.buffer(sink)){
                     assert response.body() != null;
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
-//                            "mkdir "+nfsFile.getName().replace(".tar",""),
-//                            "chmod 777 "+nfsFile.getName().replace(".tar",""),
                                 "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
                                 "chmod -R 777 /data/local/tmp/AutoTest/" + url.substring(url.lastIndexOf("/") + 1).replace(".tar", ""));
-//                        String[] cmds = {"sh","-c","su;cd " +mContext.getFilesDir() + "/Sdk;tar -zxvf " + url.substring(url.lastIndexOf("/") + 1)  + " /data/local/tmp/AutoTest/;chmod -R 777 /data/local/tmp/AutoTest/"+url.substring(url.lastIndexOf("/") + 1) .replace(".tgz","")};
-//                        System.out.println(cmds);
-//                        Process pro = Runtime.getRuntime().exec(cmds);
-//                        pro.waitFor();
-//                        pro.destroy();
                     }
                 } catch (Exception e) {
                     if (e.getClass()== FileNotFoundException.class){
@@ -299,9 +289,6 @@ public class HttpUtil {
                 } finally {
                     assert response.body() != null;
                     response.body().close();
-                    if (bufferedSink != null) {
-                        bufferedSink.close();
-                    }
                     countDownLatch.countDown();
                 }
             }
@@ -328,16 +315,14 @@ public class HttpUtil {
         Request request = new Request.Builder().url(url).build();
         new OkHttpClient().newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 // 下载失败
                 e.printStackTrace();
                 LogUtils.i("DOWNLOAD", "download failed");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Sink sink = null;
-                BufferedSink bufferedSink = null;
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
 
                 File localFile;
                 switch (type) {
@@ -355,13 +340,12 @@ public class HttpUtil {
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
                 String filename = url.substring(url.lastIndexOf("/") + 1);
-                try {
-                    sink = Okio.sink(localFile);
-                    bufferedSink = Okio.buffer(sink);
+                try (Sink sink =Okio.sink(localFile);
+                     BufferedSink bufferedSink = Okio.buffer(sink)){
+                    assert response.body() != null;
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
                     response.body().close();
-                    Thread.sleep(1000);
                     switch (type) {
                         case "sdk":
                             PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
@@ -382,9 +366,6 @@ public class HttpUtil {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    if (bufferedSink != null) {
-                        bufferedSink.close();
-                    }
                     countDownLatch.countDown();
                 }
             }
@@ -408,16 +389,14 @@ public class HttpUtil {
         Request request = new Request.Builder().url(url).build();
         new OkHttpClient().newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 // 下载失败
                 e.printStackTrace();
                 LogUtils.i("DOWNLOAD", "download failed");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Sink sink = null;
-                BufferedSink bufferedSink = null;
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
 
                 File localFile;
                 switch (type) {
@@ -430,13 +409,12 @@ public class HttpUtil {
                     default:
                         throw new IllegalStateException("Unexpected value: " + type);
                 }
-                try {
-                    sink = Okio.sink(localFile);
-                    bufferedSink = Okio.buffer(sink);
+                try (Sink sink =Okio.sink(localFile);
+                     BufferedSink bufferedSink = Okio.buffer(sink)){
+                    assert response.body() != null;
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
                     response.body().close();
-                    Thread.sleep(1000);
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
                                 "tar -zxvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
@@ -447,9 +425,6 @@ public class HttpUtil {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    if (bufferedSink != null) {
-                        bufferedSink.close();
-                    }
                     countDownLatch.countDown();
                 }
             }
@@ -537,15 +512,16 @@ public class HttpUtil {
                 .build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 LogUtils.w(path+"文件上传出现问题");
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 LogUtils.i("log文件上传成功");
                 assert response.body() != null;
                 response.body().close();
+                response.close();
             }
         });
     }
