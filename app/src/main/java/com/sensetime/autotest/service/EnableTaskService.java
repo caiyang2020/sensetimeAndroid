@@ -189,9 +189,15 @@ public class EnableTaskService extends IntentService {
             }
             String[] strings = {"finish"};
             readyVideo.add(strings);
+            taskSemaphore.release();
         });
         //开始循环跑任务
         while (true) {
+            try {
+                taskSemaphore.acquire();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             if (!readyVideo.isEmpty()) {
                 if (readyVideo.get(0)[0].equals("finish")) {
                     LogUtils.i("任务运行完成");
@@ -205,11 +211,6 @@ public class EnableTaskService extends IntentService {
                     LogUtils.i("finish");
                     WebSocketService.isRunning = false;
                     break;
-                }
-                try {
-                    taskSemaphore.acquire();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
                 File Logfile = new File(mContext.getFilesDir() + "/Log/" + task.getTaskName() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 if (Logfile.exists()) {

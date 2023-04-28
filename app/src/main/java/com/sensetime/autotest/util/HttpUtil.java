@@ -420,7 +420,6 @@ public class HttpUtil {
             public void onResponse(Call call, Response response) throws IOException {
                 Sink sink = null;
                 BufferedSink bufferedSink = null;
-
                 File localFile;
                 switch (type) {
                     case "sdk":
