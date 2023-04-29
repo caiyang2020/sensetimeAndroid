@@ -176,10 +176,9 @@ public class EnableTaskService extends IntentService {
                 String path;
                 String name = "list" + j;
                 Log.i(TAG, "视频地址是" + name);
-                CountDownLatch countDownLatch = null;
+                CountDownLatch countDownLatch = new CountDownLatch(100);
                 try (FileWriter fw = new FileWriter(mContext.getFilesDir() + File.separator + "Video" + File.separator + "list" + (downloadCount / 100));
                      BufferedWriter out = new BufferedWriter(fw)){
-                    countDownLatch = new CountDownLatch(100);
                     for (int i = 0; i < 100; i++) {
                         try {
                             path = gtList.get(downloadCount++)[0];
