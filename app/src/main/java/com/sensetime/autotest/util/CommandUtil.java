@@ -39,7 +39,7 @@ public class CommandUtil {
         cmd=cmd.replace("{videoPath}",splicePath(String.valueOf(mContext.getFilesDir()),"Video",videoPath.replaceAll("/","^")));
         cmd=cmd.replace("{fps}","30");
         cmd=cmd.replace("{logPath}",splicePath(String.valueOf(mContext.getFilesDir()),"Log", String.valueOf(t.getId()),videoPath.replaceAll("/","^").replaceAll("\\.[a-zA-z0-9]+$", ".log")));
-        cmd=cmd.replace("{facedbPath}",splicePath(String.valueOf(mContext.getFilesDir()),"Log", String.valueOf(t.getId()),"reg.db"));
+        cmd=cmd.replace("{facedbPath}",splicePath(String.valueOf(mContext.getFilesDir()),"Log","reg.db"));
         cmd=cmd.replace("{x}",l.get(0)[0]);
         cmd=cmd.replace("{y}",l.get(0)[0]);
         cmd=cmd.replace("{z}",l.get(0)[0]);

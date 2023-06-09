@@ -88,7 +88,13 @@ public class EnableTaskService extends IntentService {
     }
 
     public void init(Task task) {
-        CountDownLatch prepareTask = new CountDownLatch(3);
+        CountDownLatch prepareTask = new CountDownLatch(4);
+
+        if (task.getExpectOne()!=null){
+            httpUtil.downloadFaceIdRegFile(mContext, prepareTask, task.getExpectOne());
+        }else {
+            prepareTask.countDown();
+        }
         //sdk 准备
         LogUtils.i("Start SDK preparation");
         httpUtil.downloadFile(mContext, prepareTask, task.getSdkId(), "sdk", task.getSdkRootPath());
@@ -159,6 +165,7 @@ public class EnableTaskService extends IntentService {
             dir.mkdir();
         }
         executor.execute(()->{
+            Semaphore semaphore = new Semaphore(0);
             for (String[] gt : gtList) {
                 try {
                     downloadSemaphore.acquire();
@@ -175,8 +182,9 @@ public class EnableTaskService extends IntentService {
                 } else {
                     String path = gt[0];
                     try {
-                        httpUtil.downloadFile(mContext, downloadSemaphore, path, "video");
                         downloadSemaphore.acquire();
+                        httpUtil.downloadFile(mContext, semaphore, path, "video");
+                        semaphore.acquire();
                         Log.i(TAG,"下载视频文件完成");
                         readyVideo.add(gt);
                         taskSemaphore.release();
@@ -245,8 +253,10 @@ public class EnableTaskService extends IntentService {
                     sendServer();
                     LogUtils.d("taskProcess", "任务: " + task.getTaskName() + "， 进度更新为：" + process);
                 }
+                downloadSemaphore.release();
             }
         }
+        httpUtil.fileUpload(task.getId(),mContext.getFilesDir()+File.separator+"Log"+File.separator+"reg.db");
     }
 
     private void sendtoHandler(int what,Object o,Handler mainActivityHandler) {

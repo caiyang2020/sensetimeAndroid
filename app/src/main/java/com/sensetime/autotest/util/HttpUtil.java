@@ -500,7 +500,6 @@ public class HttpUtil {
                     bufferedSink.writeAll(response.body().source());
                     bufferedSink.close();
                     response.body().close();
-                    Thread.sleep(1000);
                     if (type.equalsIgnoreCase("sdk")) {
                         PowerShell.cmd("cd " + mContext.getFilesDir() + "/Sdk",
                                 "tar -xvf " + url.substring(url.lastIndexOf("/") + 1) + " -C  /data/local/tmp/AutoTest/",
@@ -548,5 +547,43 @@ public class HttpUtil {
             }
         });
     }
+
+    //下载faceId任务的reg使用
+    public void downloadFaceIdRegFile(Context mContext, CountDownLatch countDownLatch, String fileId) {
+        //下载路径，如果路径无效了，可换成你的下载路径
+        String sourcePath = "/data/test_platform/task_log/"+fileId+File.separator+"reg.db";
+        final String url = "http://savvcenter.sensetime.com/resource/" + sourcePath;
+        Request request = new Request.Builder().url(url).build();
+        new OkHttpClient().newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // 下载失败
+                e.printStackTrace();
+                LogUtils.i("DOWNLOAD", "download failed");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Sink sink = null;
+                BufferedSink bufferedSink = null;
+                File localFile = new File(mContext.getFilesDir() + "/Log", url.substring(url.lastIndexOf("/") + 1));
+                try {
+                    sink = Okio.sink(localFile);
+                    bufferedSink = Okio.buffer(sink);
+                    bufferedSink.writeAll(response.body().source());
+                    bufferedSink.close();
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if (bufferedSink != null) {
+                        bufferedSink.close();
+                    }
+                    countDownLatch.countDown();
+                }
+            }
+        });
+    }
+
 }
 

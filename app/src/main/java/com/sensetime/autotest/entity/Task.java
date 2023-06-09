@@ -4,21 +4,31 @@ import java.io.Serializable;
 
 public class Task implements Serializable {
 
-    Long id;
+    private Long id;
 
-    Long sdkId;
+    private Long sdkId;
 
-    String taskName;
+    private String taskName;
 
-    Long gtId;
+    private Long gtId;
 
-    String sdkRootPath;
+    private String sdkRootPath;
 
-    String sdkRunPath;
+    private String sdkRunPath;
 
-    String runFunc;
+    private String runFunc;
 
-    String cmd;
+    private String cmd;
+
+    private String expectOne;
+
+    public String getExpectOne() {
+        return expectOne;
+    }
+
+    public void setExpectOne(String expectOne) {
+        this.expectOne = expectOne;
+    }
 
     public Long getId() {
         return id;
@@ -87,13 +97,15 @@ public class Task implements Serializable {
     @Override
     public String toString() {
         return "Task{" +
-                "sdkId=" + sdkId +
+                "id=" + id +
+                ", sdkId=" + sdkId +
                 ", taskName='" + taskName + '\'' +
                 ", gtId=" + gtId +
                 ", sdkRootPath='" + sdkRootPath + '\'' +
                 ", sdkRunPath='" + sdkRunPath + '\'' +
                 ", runFunc='" + runFunc + '\'' +
                 ", cmd='" + cmd + '\'' +
+                ", expectOne='" + expectOne + '\'' +
                 '}';
     }
 }
