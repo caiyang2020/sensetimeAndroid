@@ -80,6 +80,7 @@ public class Cmd {
 //            }
             process.waitFor();
             process.destroy();
+            System.gc();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }

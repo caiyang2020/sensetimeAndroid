@@ -239,7 +239,7 @@ public class EnableTaskService extends IntentService {
                 System.out.println("./" + task.getSdkRunPath() + File.separator + task.getRunFunc() + cmd);
                 httpUtil.fileUpload(task.getId(), mContext.getFilesDir() + "/Log/" + task.getId() + "/" + readyVideo.get(0)[0].replaceAll("/", "^").replaceAll("\\.[a-zA-z0-9]+$", ".log"));
                 Cmd.executes("cd " + mContext.getFilesDir() + "/Video",
-                        "rm " + readyVideo.get(0)[0].replaceAll("/", "^"));
+                        "rm \"" + readyVideo.get(0)[0].replaceAll("/", "^")+"\"");
                 downloadSemaphore.release();
                 readyVideo.remove(0);
                 num++;
